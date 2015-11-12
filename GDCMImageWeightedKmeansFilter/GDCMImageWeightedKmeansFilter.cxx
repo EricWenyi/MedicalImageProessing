@@ -104,9 +104,9 @@ int main( int argc, char * argv[] ){
 	joinSeries->SetOrigin(originImage3D->GetOrigin()[2]);
 	joinSeries->SetSpacing(originImage3D->GetSpacing()[2]);
 	
-	for(medianIterator.GoToBegin(), originIterator.GoToBegin(); !medianIterator.IsAtEnd(); medianIterator.NextSlice(), originIterator.NextSlice()){
+	for( medianIterator.GoToBegin(), originIterator.GoToBegin(); !medianIterator.IsAtEnd(); medianIterator.NextSlice(), originIterator.NextSlice() ){
 		//获取切片序号
-		ImageType3D::IndexType maskSliceIndex = medianIterator.GetIndex();
+		ImageType3D::IndexType medianSliceIndex = medianIterator.GetIndex();
 
 		ImageType3D::IndexType originSliceIndex = originIterator.GetIndex();
 
@@ -122,7 +122,7 @@ int main( int argc, char * argv[] ){
 
 		//设定每张切片的大小和序号
 		medianSliceRegion.SetSize( medianSliceSize );
-		medianSliceRegion.SetIndex( maskSliceIndex );
+		medianSliceRegion.SetIndex( medianSliceIndex );
 
 		originSliceRegion.SetSize( originSliceSize );
 		originSliceRegion.SetIndex( originSliceIndex );
