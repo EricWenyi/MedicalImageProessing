@@ -17,7 +17,7 @@
 
 int main( int argc, char* argv[] ){
 	if( argc < 4 ){
-		std::cerr << "Usage: " << argv[0] << " DicomDirectory OutputDicomPath&Name lowerThreshold" << std::endl;
+		std::cerr << "Usage: " << argv[0] << " DicomDirectory OutputDicomPath&Name LowerThreshold" << std::endl;
 		return EXIT_FAILURE;
     }
 
@@ -29,7 +29,7 @@ int main( int argc, char* argv[] ){
 
 	const unsigned int OutputDimension = 2;
 
-	typedef float OutputPixelType;//此处原为signed short，应设置为float类型，下文CurvatureFlowImageFilter所要求，否则将会弹窗报错至失去响应
+	typedef float OutputPixelType;
 	typedef itk::Image< OutputPixelType, OutputDimension > OutputImageType;
 
 	typedef itk::GDCMImageIO ImageIOType;
@@ -43,15 +43,11 @@ int main( int argc, char* argv[] ){
 	const ReaderType::FileNamesContainer & tmp_filenames = filenames;
 	const unsigned int numberOfFileNames = filenames.size();
 
-    //reverse order?? bug???
-
-                int j=numberOfFileNames;
-                for(int i=0; i< tmp_filenames.size(); i++)
-                {
-                        filenames[i]=tmp_filenames[j-1];
-                        j--;
-                }
-                //end reverse
+    int j=numberOfFileNames;
+    for(int i=0; i< tmp_filenames.size(); i++){
+            filenames[i]=tmp_filenames[j-1];
+            j--;
+    }
 
 	for(unsigned int fni = 0; fni < numberOfFileNames; ++fni){
 		std::cout << "filename # " << fni + 1 << " = ";
@@ -97,11 +93,11 @@ int main( int argc, char* argv[] ){
 		ExtractFilterType::Pointer inExtractor = ExtractFilterType::New();
 		inExtractor->SetExtractionRegion( sliceRegion );
 		inExtractor->InPlaceOn();
-		inExtractor->SetDirectionCollapseToSubmatrix();//此处原为无，如果不实现此方法（此方法用于设定方向坍塌的模式，看源文件里头的内容，虽没什么用，但还是强制需要设置），否则下面更新迭代器时将会捕获到异常
+		inExtractor->SetDirectionCollapseToSubmatrix();
 		inExtractor->SetInput( reader->GetOutput() );
 
 		try{
-			inExtractor->Update();//原此处报6010错误，添加try，catch后发现，上文有修复方法，于是将所有Update()方法都加了try，catch
+			inExtractor->Update();
 		} catch (itk::ExceptionObject &excp){
 			std::cerr << "ExceptionObject: inExtractor->Update() caught !" << std::endl;
 			std::cerr << excp << std::endl;
@@ -117,21 +113,17 @@ int main( int argc, char* argv[] ){
 
 		FilterType::Pointer ThresholdFilter = FilterType::New();
 
-		
 		const PixelType lowerThreshold = atof( argv[3] );
-
 
 		ThresholdFilter->SetOutsideValue( -2048 );
 		ThresholdFilter->ThresholdBelow( lowerThreshold );
   
-
-
 		ThresholdFilter->SetInput(smoothing->GetOutput());
 		
 		try{
 			ThresholdFilter->Update();
 		} catch (itk::ExceptionObject &excp){
-			std::cerr << "ExceptionObject: connectedThreshold->Update() caught !" << std::endl;
+			std::cerr << "ExceptionObject: Threshold->Update() caught !" << std::endl;
 			std::cerr << excp << std::endl;
 			return EXIT_FAILURE;
 		}
