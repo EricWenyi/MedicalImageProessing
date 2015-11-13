@@ -25,13 +25,7 @@
 #include "itkWeightedCentroidKdTreeGenerator.h"
 
 //kd树估计值生成器的头文件
-#include "itkKdTreeBasedKmeansEstimator.h"
-
-//判断规则的头文件
-#include "itkMinimumDecisionRule.h"
-
-//采样分类器过滤器的头文件
-#include "itkSampleClassifierFilter.h"
+#include "KdTreeBasedKmeansEstimator.h"
 
 int main( int argc, char * argv[] ){
 
@@ -205,64 +199,26 @@ int main( int argc, char * argv[] ){
 			std::cout << "	estimated mean : " << estimatedMeans[i] << std::endl;
 		}
 
-		//类成员判断规则，这里设定的是最小值判断规则，离谁近归谁
-		typedef itk::Statistics::MinimumDecisionRule DecisionRuleType;
-		DecisionRuleType::Pointer decisionRule = DecisionRuleType::New();
-
-		//设定分类器的输入和类成员判定规则
-		typedef itk::Statistics::SampleClassifierFilter< SampleType > ClassifierType;
-		ClassifierType::Pointer classifier = ClassifierType::New();
-		classifier->SetDecisionRule( decisionRule );
-		classifier->SetInput( sample );
-		classifier->SetNumberOfClasses( 2 );
-
-		//类标签的设定
-		typedef ClassifierType::ClassLabelVectorObjectType ClassLabelVectorObjectType;
-		typedef ClassifierType::ClassLabelVectorType ClassLabelVectorType;
-		typedef ClassifierType::ClassLabelType ClassLabelType;
-		ClassLabelVectorObjectType::Pointer classLabelsObject = ClassLabelVectorObjectType::New();
-		ClassLabelVectorType &classLabelsVector = classLabelsObject->Get();
-		classLabelsVector.push_back( 0 );
-		classLabelsVector.push_back( 1 );
-
-		//为分类器设定类标签
-		classifier->SetClassLabels( classLabelsObject );
-
-		//将估值器得到的最终的各类中心的均值传入隶属度函数
-		typedef ClassifierType::MembershipFunctionVectorObjectType MembershipFunctionVectorObjectType;
-		typedef ClassifierType::MembershipFunctionVectorType MembershipFunctionVectorType;
-		MembershipFunctionVectorObjectType::Pointer membershipFunctionVectorObject = MembershipFunctionVectorObjectType::New();
-		MembershipFunctionVectorType& membershipFunctionVector = membershipFunctionVectorObject->Get();
-		int index = 0;
-		for ( unsigned int i = 0; i < 2; i++ ){
-			typedef itk::Statistics::DistanceToCentroidMembershipFunction< MeasurementVectorType > MembershipFunctionType;
-			MembershipFunctionType::Pointer membershipFunction = MembershipFunctionType::New();
-			MembershipFunctionType::CentroidType centroid( sample->GetMeasurementVectorSize() );
-			for ( unsigned int j = 0; j < sample->GetMeasurementVectorSize(); j++ ){
-				centroid[j] = estimatedMeans[index++];
+		//分配像素点至background或nodule
+		for ( median.GoToBegin(), origin.GoToBegin(); !median.IsAtEnd(); median++, origin++ ){
+			double means0[2];
+			means0[0] = estimatedMeans[0];
+			means0[1] = estimatedMeans[1];
+			double means1[2];
+			means1[0] = estimatedMeans[2];
+			means1[1] = estimatedMeans[3];
+			double point[2];
+			point[0] = ( double ) median.Get();
+			point[1] = ( double ) origin.Get();
+			double distance0 = ( point[0] - means0[0] ) * ( point[0] - means0[0] ) + ( point[1] - means0[1] ) * ( point[1] - means0[1] );
+			double distance1 = ( point[0] - means1[0] ) * ( point[0] - means1[0] ) + ( point[1] - means1[1] ) * ( point[1] - means1[1] );
+			if ( distance0 / distance1 > 4.0 ){
+				origin.Set( 1 );
+			} else {
+				origin.Set( 0 );
 			}
-			membershipFunction->SetCentroid( centroid );
-			membershipFunctionVector.push_back( membershipFunction.GetPointer() );
 		}
 
-		//为分类器设定隶属度函数，更新分类器，并捕获异常
-		classifier->SetMembershipFunctions( membershipFunctionVectorObject );
-		try{
-			classifier->Update();
-		} catch ( itk::ExceptionObject & err ){
-			std::cerr << "ExceptionObject classifier->Update() caught !" << std::endl;
-			std::cerr << err << std::endl;
-			return EXIT_FAILURE;
-		}
-
-		//将分类器输出的隶属样本中的类标签提取出来，并使用图像区域迭代器写入原始图像相应位置
-		const ClassifierType::MembershipSampleType *membershipSample = classifier->GetOutput();
-		ClassifierType::MembershipSampleType::ConstIterator membershipSampleIterator = membershipSample->Begin();
-		for ( origin.GoToBegin(); !origin.IsAtEnd(); origin++ ){
-			origin.Set( membershipSampleIterator.GetClassLabel() );
-			membershipSampleIterator++;
-		}
-		
 		//设定图片组合器的输入
 		joinSeries->PushBackInput( originExtractFilter->GetOutput() );
 	}
