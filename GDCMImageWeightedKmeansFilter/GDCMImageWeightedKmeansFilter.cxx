@@ -166,14 +166,14 @@ int main( int argc, char * argv[] ){
 		IteratorType origin( originExtractFilter->GetOutput(), originExtractFilter->GetOutput()->GetRequestedRegion() );
 
 		//设定观测向量和样本集，每个观测向量的两个维度分别对应中值滤波图像和原始图像，样本集有序的储存观测向量
-		typedef itk::Vector< float , 2 > MeasurementVectorType;
+		typedef itk::Vector< double , 2 > MeasurementVectorType;
 		typedef itk::Statistics::ListSample< MeasurementVectorType > SampleType;
 		SampleType::Pointer sample = SampleType::New();
 		sample->SetMeasurementVectorSize( 2 );
 		MeasurementVectorType mv;
 		for ( median.GoToBegin(), origin.GoToBegin(); !median.IsAtEnd(); median++, origin++ ){
-			mv[0] = ( float ) median.Get();
-			mv[1] = ( float ) origin.Get();
+			mv[0] = ( double ) median.Get();
+			mv[1] = ( double ) origin.Get();
 			sample->PushBack( mv );
 		}
 		
@@ -188,9 +188,11 @@ int main( int argc, char * argv[] ){
 		typedef TreeGeneratorType::KdTreeType TreeType;
 		typedef itk::Statistics::KdTreeBasedKmeansEstimator< TreeType > EstimatorType;
 		EstimatorType::Pointer estimator = EstimatorType::New();
-		EstimatorType::ParametersType initialMeans( 2 );
+		EstimatorType::ParametersType initialMeans( 4 );
 		initialMeans[0] = 0.0;
 		initialMeans[1] = 0.0;
+		initialMeans[2] = 0.0;
+		initialMeans[3] = 0.0;
 		estimator->SetParameters( initialMeans );
 		estimator->SetKdTree( treeGenerator->GetOutput() );
 		estimator->SetCentroidPositionChangesThreshold(0.0);
@@ -198,7 +200,7 @@ int main( int argc, char * argv[] ){
 
 		//从estimator获取最终的各类中心的均值并输出
 		EstimatorType::ParametersType estimatedMeans = estimator->GetParameters();
-		for ( unsigned int i = 0; i < 2; ++i ){
+		for ( unsigned int i = 0; i < 4; ++i ){
 			std::cout << "cluster[" << i << "] " << std::endl;
 			std::cout << "	estimated mean : " << estimatedMeans[i] << std::endl;
 		}
@@ -256,7 +258,6 @@ int main( int argc, char * argv[] ){
 		//将分类器输出的隶属样本中的类标签提取出来，并使用图像区域迭代器写入原始图像相应位置
 		const ClassifierType::MembershipSampleType *membershipSample = classifier->GetOutput();
 		ClassifierType::MembershipSampleType::ConstIterator membershipSampleIterator = membershipSample->Begin();
-		
 		for ( origin.GoToBegin(); !origin.IsAtEnd(); origin++ ){
 			origin.Set( membershipSampleIterator.GetClassLabel() );
 			membershipSampleIterator++;
