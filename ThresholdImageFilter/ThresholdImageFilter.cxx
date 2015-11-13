@@ -39,24 +39,24 @@ int main( int argc, char* argv[] ){
 	NamesGeneratorType::Pointer namesGenerator = NamesGeneratorType::New();
 	namesGenerator->SetInputDirectory( argv[1] );
 
-	ReaderType::FileNamesContainer & filenames = const_cast<ReaderType::FileNamesContainer &> (namesGenerator->GetInputFileNames());
-	const ReaderType::FileNamesContainer & tmp_filenames = filenames;
+	const ReaderType::FileNamesContainer & filenames = namesGenerator->GetInputFileNames();
+	std::vector< std::string > tmp_filenames = filenames;
 	const unsigned int numberOfFileNames = filenames.size();
 
     int j=numberOfFileNames;
-    for(int i=0; i< tmp_filenames.size(); i++){
-            filenames[i]=tmp_filenames[j-1];
+    for(int i=0; i< filenames.size(); i++){
+            tmp_filenames[i]=filenames[j-1];
             j--;
     }
 
 	for(unsigned int fni = 0; fni < numberOfFileNames; ++fni){
 		std::cout << "filename # " << fni + 1 << " = ";
-		std::cout << filenames[fni] << std::endl;
+		std::cout << tmp_filenames[fni] << std::endl;
     }
 
 	ReaderType::Pointer reader = ReaderType::New();
 	reader->SetImageIO( gdcmIO );
-	reader->SetFileNames( filenames );
+	reader->SetFileNames( tmp_filenames );
 
 	try{
 		reader->Update();
