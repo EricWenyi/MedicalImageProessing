@@ -40,63 +40,63 @@ int main( int argc, char * argv[] ){
 
 	//设定读取器类型及设定读取的图像类型和图像地址
 	typedef itk::ImageFileReader< ImageType3D > ReaderType;
-	ReaderType::Pointer originReader = ReaderType::New();
-	originReader->SetImageIO( gdcmIO );
-	originReader->SetFileName( argv[1] );
+	ReaderType::Pointer reader = ReaderType::New();
+	reader->SetImageIO( gdcmIO );
+	reader->SetFileName( argv[1] );
 
 	//更新读取器，并捕获异常
 	try{
-		originReader->Update();
+		reader->Update();
 	} catch ( itk::ExceptionObject & err ){
-		std::cerr << "ExceptionObject originReader->Update() caught !" << std::endl;
+		std::cerr << "ExceptionObject reader->Update() caught !" << std::endl;
 		std::cerr << err << std::endl;
 		return EXIT_FAILURE;
 	}
 
 	//设定输入区域大小
-	ImageType3D::ConstPointer originImage3D = originReader->GetOutput();
-	ImageType3D::RegionType originRegion3D = originImage3D->GetLargestPossibleRegion();
+	ImageType3D::ConstPointer image3D = reader->GetOutput();
+	ImageType3D::RegionType region3D = image3D->GetLargestPossibleRegion();
 	
 	//设定切片迭代器
 	typedef itk::ImageSliceConstIteratorWithIndex < ImageType3D > SliceIteratorType;
-	SliceIteratorType originIterator( originImage3D, originRegion3D );
-	originIterator.SetFirstDirection(0);
-	originIterator.SetSecondDirection(1);
+	SliceIteratorType iterator( image3D, region3D );
+	iterator.SetFirstDirection(0);
+	iterator.SetSecondDirection(1);
 
 	//设置图片组合器
 	typedef itk::JoinSeriesImageFilter< ImageType2D, ImageType3D > JoinSeriesFilterType;
 	JoinSeriesFilterType::Pointer joinSeries = JoinSeriesFilterType::New();
-	joinSeries->SetOrigin(originImage3D->GetOrigin()[2]);
-	joinSeries->SetSpacing(originImage3D->GetSpacing()[2]);
+	joinSeries->SetOrigin(image3D->GetOrigin()[2]);
+	joinSeries->SetSpacing(image3D->GetSpacing()[2]);
 	
-	for( originIterator.GoToBegin(); !originIterator.IsAtEnd(); originIterator.NextSlice() ){
+	for( iterator.GoToBegin(); !iterator.IsAtEnd(); iterator.NextSlice() ){
 		//获取切片序号
-		ImageType3D::IndexType originSliceIndex = originIterator.GetIndex();
+		ImageType3D::IndexType sliceIndex = iterator.GetIndex();
 
 		//获取每张切片的大小，并设置每张切片的Z轴为0
 		typedef itk::ExtractImageFilter< ImageType3D, ImageType2D > ExtractFilterType;
-		ExtractFilterType::InputImageRegionType originSliceRegion = originIterator.GetRegion();
-		ExtractFilterType::InputImageRegionType::SizeType originSliceSize = originSliceRegion.GetSize();
-		originSliceSize[2] = 0;
+		ExtractFilterType::InputImageRegionType sliceRegion = iterator.GetRegion();
+		ExtractFilterType::InputImageRegionType::SizeType sliceSize = sliceRegion.GetSize();
+		sliceSize[2] = 0;
 
 		//设定每张切片的大小和序号
-		originSliceRegion.SetSize( originSliceSize );
-		originSliceRegion.SetIndex( originSliceIndex );
+		sliceRegion.SetSize( sliceSize );
+		sliceRegion.SetIndex( sliceIndex );
 		
 		//指定过滤器类型
-		ExtractFilterType::Pointer originExtractFilter = ExtractFilterType::New();
-		originExtractFilter->SetExtractionRegion( originSliceRegion );
+		ExtractFilterType::Pointer extractFilter = ExtractFilterType::New();
+		extractFilter->SetExtractionRegion( sliceRegion );
 		
 		//到位并开启过滤器，修改方向坍塌策略为子矩阵
-		originExtractFilter->InPlaceOn();
-		originExtractFilter->SetDirectionCollapseToSubmatrix();
-		originExtractFilter->SetInput( originReader->GetOutput() );
+		extractFilter->InPlaceOn();
+		extractFilter->SetDirectionCollapseToSubmatrix();
+		extractFilter->SetInput( reader->GetOutput() );
 		
 		//更新过滤器，并捕获异常
 		try{
-			originExtractFilter->Update();
+			extractFilter->Update();
 		} catch (itk::ExceptionObject &excp){
-			std::cerr << "ExceptionObject: originExtractFilter->Update() caught !" << std::endl;
+			std::cerr << "ExceptionObject: extractFilter->Update() caught !" << std::endl;
 			std::cerr << excp << std::endl;
 			return EXIT_FAILURE;
 		}
@@ -111,7 +111,7 @@ int main( int argc, char * argv[] ){
 		medianFilter->SetRadius( indexRadius );
 
 		//设定中值滤波器输入
-		medianFilter->SetInput( originExtractFilter->GetOutput() );
+		medianFilter->SetInput( extractFilter->GetOutput() );
 		
 		//更新中值滤波器，并捕获异常
 		try{
