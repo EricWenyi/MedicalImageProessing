@@ -3,7 +3,7 @@
 #include "itkImageSeriesReader.h"
 #include "itkImageSeriesWriter.h"
 
-#include "itkConnectedThresholdImageFilter.h"
+#include "itkThresholdImageFilter.h"
 #include "itkImage.h"
 #include "itkCurvatureFlowImageFilter.h"
 
@@ -16,8 +16,8 @@
 #include "itkJoinseriesImageFilter.h"
 
 int main( int argc, char* argv[] ){
-	if( argc < 7 ){
-		std::cerr << "Usage: " << argv[0] << "DicomDirectory OutputDicomPath&Name seedX seedY lowerThreshold upperThreshold" << std::endl;
+	if( argc < 4 ){
+		std::cerr << "Usage: " << argv[0] << " DicomDirectory OutputDicomPath&Name lowerThreshold" << std::endl;
 		return EXIT_FAILURE;
     }
 
@@ -39,8 +39,19 @@ int main( int argc, char* argv[] ){
 	NamesGeneratorType::Pointer namesGenerator = NamesGeneratorType::New();
 	namesGenerator->SetInputDirectory( argv[1] );
 
-	const ReaderType::FileNamesContainer & filenames = namesGenerator->GetInputFileNames();
+	ReaderType::FileNamesContainer & filenames = const_cast<ReaderType::FileNamesContainer &> (namesGenerator->GetInputFileNames());
+	const ReaderType::FileNamesContainer & tmp_filenames = filenames;
 	const unsigned int numberOfFileNames = filenames.size();
+
+    //reverse order?? bug???
+
+                int j=numberOfFileNames;
+                for(int i=0; i< tmp_filenames.size(); i++)
+                {
+                        filenames[i]=tmp_filenames[j-1];
+                        j--;
+                }
+                //end reverse
 
 	for(unsigned int fni = 0; fni < numberOfFileNames; ++fni){
 		std::cout << "filename # " << fni + 1 << " = ";
@@ -102,38 +113,30 @@ int main( int argc, char* argv[] ){
 		CurvatureFlowImageFilterType::Pointer smoothing = CurvatureFlowImageFilterType::New();
 		smoothing->SetInput(inExtractor->GetOutput());
 
-		typedef itk::ConnectedThresholdImageFilter< OutputImageType, OutputImageType > ConnectedFilterType;
+		typedef itk::ThresholdImageFilter< OutputImageType > FilterType;
 
-		ConnectedFilterType::Pointer connectedThreshold = ConnectedFilterType::New();
+		FilterType::Pointer ThresholdFilter = FilterType::New();
 
-		smoothing->SetNumberOfIterations( 5 );
-		smoothing->SetTimeStep( 0.125 );
 		
-		const PixelType lowerThreshold = atof( argv[5] );
-		const PixelType upperThreshold = atof( argv[6] );
+		const PixelType lowerThreshold = atof( argv[3] );
 
-		connectedThreshold->SetLower( lowerThreshold );
-		connectedThreshold->SetUpper( upperThreshold );
+
+		ThresholdFilter->SetOutsideValue( -2048 );
+		ThresholdFilter->ThresholdBelow( lowerThreshold );
   
-		connectedThreshold->SetReplaceValue( 255 );
-		
-		OutputImageType::IndexType index;
 
-		index[0] = atoi( argv[3] );
-		index[1] = atoi( argv[4] );
 
-		connectedThreshold->SetSeed( index );
-		connectedThreshold->SetInput(smoothing->GetOutput());
+		ThresholdFilter->SetInput(smoothing->GetOutput());
 		
 		try{
-			connectedThreshold->Update();
+			ThresholdFilter->Update();
 		} catch (itk::ExceptionObject &excp){
 			std::cerr << "ExceptionObject: connectedThreshold->Update() caught !" << std::endl;
 			std::cerr << excp << std::endl;
 			return EXIT_FAILURE;
 		}
 		
-		joinSeries->PushBackInput( connectedThreshold->GetOutput() );
+		joinSeries->PushBackInput( ThresholdFilter->GetOutput() );
 	}
 
 	try{
