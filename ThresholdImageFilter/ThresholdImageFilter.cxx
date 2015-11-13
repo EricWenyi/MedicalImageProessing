@@ -45,8 +45,8 @@ int main( int argc, char* argv[] ){
 
     int j=numberOfFileNames;
     for(int i=0; i< filenames.size(); i++){
-            tmp_filenames[i]=filenames[j-1];
-            j--;
+		tmp_filenames[i]=filenames[j-1];
+        j--;
     }
 
 	for(unsigned int fni = 0; fni < numberOfFileNames; ++fni){
