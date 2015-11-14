@@ -113,6 +113,20 @@ int main( int argc, char* argv[] ){
 			drawContours( drawing, contours, i, color, 2, 8, hierarchy, 0, Point() );
 		}
 
+		//TODO
+		//1.Check if it is a circle,by Eu distance of each neighbor pixels <=sqrt(2)
+		//2.Sum of the on circle distance in two directions
+		//3.Replace troublesome archs by lines
+		/*
+		for (int i = 0; i< contours.size(); i++)
+		{
+			for(int j = 0; j<contours[i].size();j++){
+				for(int k = 0; k<contours[i].size();k++){
+
+				}
+			}
+		}
+		*/
 		ImageType2D::Pointer itkDrawing;
 		try{
 		itkDrawing=itk::OpenCVImageBridge::CVMatToITKImage<ImageType2D>(drawing);
