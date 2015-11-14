@@ -154,7 +154,7 @@ public:
    * Optimization will stop when it meets either of two termination conditions,
    * the maximum iteration limit or epsilon (minimal changes in squared sum
    * of changes in centroid positions)  */
-  void StartOptimization();
+  void StartOptimization( double R );
 
   typedef itksys::hash_map< InstanceIdentifier, unsigned int > ClusterLabelsType;
 
@@ -267,21 +267,24 @@ private:
   /** get the index of the closest candidate to the measurements
    * measurement vector */
   int GetClosestCandidate(ParameterType & measurements,
-                          std::vector< int > & validIndexes);
+                          std::vector< int > & validIndexes,
+						  double R);
   
   /** returns true if the pointA is farther than pointB to the boundary */
   bool IsFarther(ParameterType & pointA,
                  ParameterType & pointB,
                  MeasurementVectorType & lowerBound,
                  MeasurementVectorType & upperBound,
-				 int closest);//增加部分
+				 int closest,
+				 double R);
   
   /** recursive pruning algorithm. the validIndexes vector contains
    * only the indexes of the surviving candidates for the node */
   void Filter(KdTreeNodeType *node,
               std::vector< int > validIndexes,
               MeasurementVectorType & lowerBound,
-              MeasurementVectorType & upperBound);
+              MeasurementVectorType & upperBound,
+			  double R);
 
   /** copies the source parameters (k-means) to the target */
   void CopyParameters(InternalParametersType & source, InternalParametersType & target);

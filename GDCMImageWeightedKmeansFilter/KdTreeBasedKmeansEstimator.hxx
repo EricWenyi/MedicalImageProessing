@@ -96,12 +96,13 @@ template< typename TKdTree >
 inline int
 KdTreeBasedKmeansEstimator< TKdTree >
 ::GetClosestCandidate(ParameterType & measurements,
-                      std::vector< int > & validIndexes)
+                      std::vector< int > & validIndexes,
+					  double R)
 {
   int    closest = 0;
   double closestDistance = NumericTraits< double >::max();
   double tempDistance;
-  int i = 0;//增加变量i为确保tempDistance只执行一次
+  int i = 0;
   
   std::vector< int >::iterator iter = validIndexes.begin();
   while ( iter != validIndexes.end() )
@@ -109,12 +110,12 @@ KdTreeBasedKmeansEstimator< TKdTree >
     tempDistance =
       m_DistanceMetric->Evaluate(m_CandidateVector[*iter].Centroid,
                                  measurements);
-	//增加部分
+	
 	if ( i == 0 ){
-		tempDistance /= 4.0;
+		tempDistance /= R;
+		i--;
 	}
-	i--;
-	//增加部分
+	
     if ( tempDistance < closestDistance )
       {
       closest = *iter;
@@ -132,7 +133,8 @@ KdTreeBasedKmeansEstimator< TKdTree >
             ParameterType & pointB,
             MeasurementVectorType & lowerBound,
             MeasurementVectorType & upperBound,
-			int closest)//增加变量closest判断离background近，还是离nodule近
+			int closest,
+			double R)
 {
   // calculates the vertex of the Cell bounded by the lowerBound
   // and the upperBound
@@ -147,21 +149,20 @@ KdTreeBasedKmeansEstimator< TKdTree >
       m_TempVertex[i] = upperBound[i];
       }
     }
-  //修改部分
-  double distance_to_background = m_DistanceMetric->Evaluate(pointA, m_TempVertex);
-  double distance_to_nodule = m_DistanceMetric->Evaluate(pointB, m_TempVertex);
-  //修改部分
-  //增加部分
+  
+  double distance0 = m_DistanceMetric->Evaluate(pointA, m_TempVertex);
+  double distance1 = m_DistanceMetric->Evaluate(pointB, m_TempVertex);
+
   if ( closest == 0 ){
-	  distance_to_background /= 4.0;
+	  distance0 /= R;
   }
 
   if ( closest == 1 ){
-	  distance_to_background *= 4.0;
+	  distance1 /= R;
   }
-  //增加部分
-  if ( distance_to_background >=
-       distance_to_nodule )
+  
+  if ( distance0 >=
+       distance1 )
     {
     return true;
     }
@@ -175,7 +176,8 @@ KdTreeBasedKmeansEstimator< TKdTree >
 ::Filter(KdTreeNodeType *node,
          std::vector< int > validIndexes,
          MeasurementVectorType & lowerBound,
-         MeasurementVectorType & upperBound)
+         MeasurementVectorType & upperBound,
+		 double R)
 {
   unsigned int i, j;
 
@@ -200,7 +202,7 @@ KdTreeBasedKmeansEstimator< TKdTree >
       this->GetPoint( individualPoint,
                       m_KdTree->GetMeasurementVector(tempId) );
       closest =
-        this->GetClosestCandidate(individualPoint, validIndexes);
+        this->GetClosestCandidate(individualPoint, validIndexes, R);
       for ( j = 0; j < m_MeasurementVectorSize; j++ )
         {
         m_CandidateVector[closest].WeightedCentroid[j] +=
@@ -222,7 +224,7 @@ KdTreeBasedKmeansEstimator< TKdTree >
     node->GetCentroid(centroid);
 
     closest =
-      this->GetClosestCandidate(centroid, validIndexes);
+      this->GetClosestCandidate(centroid, validIndexes, R);
     closestPosition = m_CandidateVector[closest].Centroid;
     std::vector< int >::iterator iter = validIndexes.begin();
 
@@ -232,7 +234,8 @@ KdTreeBasedKmeansEstimator< TKdTree >
            && this->IsFarther(m_CandidateVector[*iter].Centroid,
                               closestPosition,
                               lowerBound, upperBound,
-							  closest) )
+							  closest,
+							  R) )
         {
         iter = validIndexes.erase(iter);
         continue;
@@ -267,13 +270,13 @@ KdTreeBasedKmeansEstimator< TKdTree >
       tempValue = upperBound[partitionDimension];
       upperBound[partitionDimension] = partitionValue;
       this->Filter(node->Left(), validIndexes,
-                   lowerBound, upperBound);
+                   lowerBound, upperBound, R);
       upperBound[partitionDimension] = tempValue;
 
       tempValue = lowerBound[partitionDimension];
       lowerBound[partitionDimension] = partitionValue;
       this->Filter(node->Right(), validIndexes,
-                   lowerBound, upperBound);
+                   lowerBound, upperBound, R);
       lowerBound[partitionDimension] = tempValue;
       }
     }
@@ -362,7 +365,7 @@ KdTreeBasedKmeansEstimator< TKdTree >
 template< typename TKdTree >
 void
 KdTreeBasedKmeansEstimator< TKdTree >
-::StartOptimization()
+::StartOptimization( double R )
 {
   unsigned int          i;
   MeasurementVectorType lowerBound;
@@ -408,7 +411,7 @@ KdTreeBasedKmeansEstimator< TKdTree >
     this->CopyParameters(currentPosition, previousPosition);
     m_CandidateVector.SetCentroids(currentPosition);
     this->Filter(m_KdTree->GetRoot(), validIndexes,
-                 lowerBound, upperBound);
+                 lowerBound, upperBound, R);
     m_CandidateVector.UpdateCentroids();
     m_CandidateVector.GetCentroids(currentPosition);
 
@@ -439,7 +442,7 @@ KdTreeBasedKmeansEstimator< TKdTree >
       }
 
     this->Filter(m_KdTree->GetRoot(), validIndexes,
-                 lowerBound, upperBound);
+                 lowerBound, upperBound, R);
     }
 
   this->CopyParameters(currentPosition, m_Parameters);

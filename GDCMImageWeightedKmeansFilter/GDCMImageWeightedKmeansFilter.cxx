@@ -15,9 +15,6 @@
 //切片文件集合成3D图像的头文件
 #include "itkJoinseriesImageFilter.h"
 
-//itk向量的头文件
-#include "itkVector.h"
-
 //采样集的头文件
 #include "itkListSample.h"
 
@@ -30,9 +27,9 @@
 int main( int argc, char * argv[] ){
 
 	//判断参数个数，若个数不够提示需要的参数
-	if( argc < 4 ){
+	if( argc < 6 ){
 		std::cerr << "Usage: " << std::endl;
-		std::cerr << argv[0] << "medianImageFile originImageFile outputImageFile" << std::endl;
+		std::cerr << argv[0] << "medianImageFile originImageFile outputImageFile indexBetweenUpperAndMiddle indexBetweenMiddleAndLower" << std::endl;
 		return EXIT_FAILURE;
 	}
 
@@ -85,24 +82,36 @@ int main( int argc, char * argv[] ){
 	//设定切片迭代器
 	typedef itk::ImageSliceConstIteratorWithIndex < ImageType3D > SliceIteratorType;
 	SliceIteratorType medianIterator( medianImage3D, medianRegion3D );
-	medianIterator.SetFirstDirection(0);
-	medianIterator.SetSecondDirection(1);
+	medianIterator.SetFirstDirection( 0 );
+	medianIterator.SetSecondDirection( 1 );
 
 	SliceIteratorType originIterator( originImage3D, originRegion3D );
-	originIterator.SetFirstDirection(0);
-	originIterator.SetSecondDirection(1);
+	originIterator.SetFirstDirection( 0 );
+	originIterator.SetSecondDirection( 1 );
 	
 	//设置图片组合器
 	typedef itk::JoinSeriesImageFilter< ImageType2D, ImageType3D > JoinSeriesFilterType;
 	JoinSeriesFilterType::Pointer joinSeries = JoinSeriesFilterType::New();
-	joinSeries->SetOrigin(originImage3D->GetOrigin()[2]);
-	joinSeries->SetSpacing(originImage3D->GetSpacing()[2]);
-	
+	joinSeries->SetOrigin( originImage3D->GetOrigin()[2] );
+	joinSeries->SetSpacing( originImage3D->GetSpacing()[2] );
+
+	//获取上区与中区，中区与下区的临界切片序号
+	double R;
+	int indexBetweenUpperAndMiddle = atoi( argv[4] );
+	int indexBetweenMiddleAndLower = atoi( argv[5] );
+
 	for( medianIterator.GoToBegin(), originIterator.GoToBegin(); !medianIterator.IsAtEnd(); medianIterator.NextSlice(), originIterator.NextSlice() ){
 		//获取切片序号
 		ImageType3D::IndexType medianSliceIndex = medianIterator.GetIndex();
 
 		ImageType3D::IndexType originSliceIndex = originIterator.GetIndex();
+
+		//如果位于中区，则设定R=4.0，否则为8.0
+		if ( medianSliceIndex[2] >= indexBetweenUpperAndMiddle && medianSliceIndex[2] < indexBetweenMiddleAndLower){
+			R = 4.0;
+		} else {
+			R = 8.0;
+		}
 
 		//获取每张切片的大小，并设置每张切片的Z轴为0
 		typedef itk::ExtractImageFilter< ImageType3D, ImageType2D > ExtractFilterType;
@@ -189,8 +198,8 @@ int main( int argc, char * argv[] ){
 		initialMeans[3] = 0.0;
 		estimator->SetParameters( initialMeans );
 		estimator->SetKdTree( treeGenerator->GetOutput() );
-		estimator->SetCentroidPositionChangesThreshold(0.0);
-		estimator->StartOptimization();
+		estimator->SetCentroidPositionChangesThreshold( 0.0 );
+		estimator->StartOptimization( R );
 
 		//从estimator获取最终的各类中心的均值并输出
 		EstimatorType::ParametersType estimatedMeans = estimator->GetParameters();
@@ -199,20 +208,25 @@ int main( int argc, char * argv[] ){
 			std::cout << "	estimated mean : " << estimatedMeans[i] << std::endl;
 		}
 
+		//设定欧氏距离度量以及最终的背景点中心
+		typedef itk::Array< double > ArrayType;
+		typedef itk::Statistics::EuclideanDistanceMetric< ArrayType > DistanceMetricType;
+		DistanceMetricType::Pointer distanceMetric = DistanceMetricType::New();
+		ArrayType means0( 2 );
+		means0[0] = estimatedMeans[0];
+		means0[1] = estimatedMeans[1];
+		ArrayType means1( 2 );
+		means1[0] = estimatedMeans[2];
+		means1[1] = estimatedMeans[3];
+
 		//分配像素点至background或nodule
 		for ( median.GoToBegin(), origin.GoToBegin(); !median.IsAtEnd(); median++, origin++ ){
-			double means0[2];
-			means0[0] = estimatedMeans[0];
-			means0[1] = estimatedMeans[1];
-			double means1[2];
-			means1[0] = estimatedMeans[2];
-			means1[1] = estimatedMeans[3];
-			double point[2];
-			point[0] = ( double ) median.Get();
-			point[1] = ( double ) origin.Get();
-			double distance0 = ( point[0] - means0[0] ) * ( point[0] - means0[0] ) + ( point[1] - means0[1] ) * ( point[1] - means0[1] );
-			double distance1 = ( point[0] - means1[0] ) * ( point[0] - means1[0] ) + ( point[1] - means1[1] ) * ( point[1] - means1[1] );
-			if ( distance0 / distance1 > 4.0 ){
+			ArrayType pixelArray( 2 );
+			pixelArray[0] = ( double ) median.Get();
+			pixelArray[1] = ( double ) origin.Get();
+			double distance0 = distanceMetric->Evaluate( pixelArray, means0 );
+			double distance1 = distanceMetric->Evaluate( pixelArray, means1 );
+			if ( distance0 / distance1 > R ){
 				origin.Set( 1 );
 			} else {
 				origin.Set( 0 );
