@@ -95,7 +95,7 @@ int main( int argc, char* argv[] ){
 			std::cerr << excp << std::endl;
 			return EXIT_FAILURE;
 		}
-		
+	
 		using namespace cv;
 		Mat img = itk::OpenCVImageBridge::ITKImageToCVMat< ImageType2D >( inExtractor->GetOutput() );
 		vector<vector<Point>> contours;
@@ -119,6 +119,7 @@ int main( int argc, char* argv[] ){
 		//2.Sum of the on circle distance in two directions
 		//3.Replace troublesome archs by lines
 		struct ALine{
+			int contour;
 			int BeginX;
 			int BeginY;
 			int EndX;
@@ -168,8 +169,8 @@ int main( int argc, char* argv[] ){
 					
 
 					//...
-					free(subpower);
-					free(power);
+	//				free(subpower);
+	//				free(power);
 
 
 
@@ -219,6 +220,7 @@ int main( int argc, char* argv[] ){
 							if(disCounterPixel[j][k]/disOfjk>1.5){
 								//Re
 								ALine aline;
+								aline.contour=i;
 								aline.BeginX=contours[i][j].x;
 								aline.BeginY=contours[i][j].y;
 								aline.EndX=contours[i][k].x;
@@ -233,7 +235,57 @@ int main( int argc, char* argv[] ){
 						}*/ //have nonsense due to symmetry
 			}
 		}
-		
+	}
+}
+		for(int it=0;it<repairedByALine.size();it++){
+			int& i = repairedByALine[it].contour;
+/*			int beginNum;
+			int endNum;
+			for(int j;j<contours[i].size();j++){
+				if((contours[i][j].x==repairedByALine[it].BeginX)&&(contours[i][j].y==repairedByALine[it].BeginY)){
+					beginNum = j;
+				}
+				if((contours[i][j].x==repairedByALine[it].EndX)&&(contours[i][j].y==repairedByALine[it].EndY)){
+					endNum = j;
+				}
+			}
+
+			if(beginNum<endNum){
+				contours[i].erase(beginNum+1,endNum-1);
+
+			}
+*/
+			int deletePixelOnContour = -1;
+			//TODO: 还没考虑位置关系
+			for(vector<cv::Point>::iterator iter = contours[i].begin();iter != contours[i].end();iter++){
+				if(((*iter).x == repairedByALine[it].BeginX)&&((*iter).y == repairedByALine[it].BeginX)){
+					deletePixelOnContour = 1;
+				}
+				if(((*iter).x == repairedByALine[it].EndX)&&((*iter).y == repairedByALine[it].EndY)){
+					deletePixelOnContour = 0;
+				}
+				if(deletePixelOnContour = 1){
+					 iter = contours[i].erase(iter);
+				}
+				if(iter == contours[i].end()){
+					break;
+				}
+			}
+			//add contour pixels
+			for(vector<cv::Point>::iterator iter = contours[i].begin();iter != contours[i].end();iter++){
+				if(((*iter).x == repairedByALine[it].BeginX)&&((*iter).y == repairedByALine[it].BeginX)){
+					iter = iter++;
+					for(int p = 0; p<(repairedByALine[it].EndX-repairedByALine[it].BeginX);p++){
+						cv::Point linePoint;
+						linePoint.x = repairedByALine[it].BeginX+p; //TODO:还没考虑begin end的位置关系，包括X Y的大小关系
+						linePoint.y = repairedByALine[it].BeginY+(repairedByALine[it].EndY-repairedByALine[it].BeginY)/(repairedByALine[it].EndX-repairedByALine[it].BeginX)*p;
+						iter = contours[i].insert(iter,linePoint);
+					}
+				}
+			}
+		}
+
+
 		ImageType2D::Pointer itkDrawing;
 		try{
 		itkDrawing=itk::OpenCVImageBridge::CVMatToITKImage<ImageType2D>(drawing);
