@@ -20,6 +20,7 @@
 
 // includes from OpenCV
 #include "cv.h"
+#include <math.h>
 
 int main( int argc, char* argv[] ){
 	if( argc < 3 ){
@@ -114,19 +115,125 @@ int main( int argc, char* argv[] ){
 		}
 
 		//TODO
-		//1.Check if it is a circle,by Eu distance of each neighbor pixels <=sqrt(2)
+		//1.Check if it is a closed circle,by Eu distance of each neighbor pixels <=sqrt(2)
 		//2.Sum of the on circle distance in two directions
 		//3.Replace troublesome archs by lines
-		/*
+		struct ALine{
+			int BeginX;
+			int BeginY;
+			int EndX;
+			int EndY;
+		};
+		Vector<ALine> repairedByALine;
+
 		for (int i = 0; i< contours.size(); i++)
 		{
-			for(int j = 0; j<contours[i].size();j++){
-				for(int k = 0; k<contours[i].size();k++){
-
+		    int closed = 1;
+			for(int j = 0; j<(contours[i].size()-1);j++){
+				//1. Check whether circle is closed
+				if(abs(contours[i][j+1].x-contours[i][j].x)+abs(contours[i][j+1].y-contours[i][j].y)>2){
+					closed = 0;
+					break;
 				}
 			}
+			if(closed == 0){
+				break;
+			}else{
+				//2.Sum of the on circle distance in two directions
+				
+				    float *disClockWise;
+					float **disPixel;
+
+
+
+					disClockWise = (float *)malloc(sizeof(float)*contours[i].size()*contours[i].size());
+					disPixel =  (float **)malloc(sizeof(float)*contours[i].size());
+					for(i =0; i< contours[i].size();i++)
+					{
+						disPixel[i] = &disClockWise[i * contours[i].size()];
+					}
+
+					float *disCounterClockWise;
+					float **disCounterPixel;
+
+
+
+					disCounterClockWise = (float *)malloc(sizeof(float)*contours[i].size()*contours[i].size());
+					disCounterPixel =  (float **)malloc(sizeof(float)*contours[i].size());
+					for(i =0; i< contours[i].size();i++)
+					{
+						disCounterPixel[i] = &disCounterClockWise[i * contours[i].size()];
+					}
+
+					
+
+					//...
+					free(subpower);
+					free(power);
+
+
+
+				for(int j = 0; j<contours[i].size();j++){
+					
+
+
+					for(int k=0; k<contours[i].size();k++){
+						if(j < k){
+							for(int m = j; m<k-1 ;m++){
+								if((contours[i][m+1].x != contours[i][m].x)||(contours[i][m+1].y!=contours[i][m].y)){
+									disPixel[j][m]+=1.4142135f;
+								}else{
+									disPixel[j][m]++;
+								}
+							}
+							for(int m=0; m<j-1; m++){
+								if((contours[i][m+1].x != contours[i][m].x)||(contours[i][m+1].y!=contours[i][m].y)){
+									disCounterPixel[j][m]+=1.4142135f;
+								}else{
+									disCounterPixel[j][m]++;
+								}
+							}
+							for(int m=k;m<contours[i].size()-1;m++){
+								if((contours[i][m+1].x != contours[i][m].x)||(contours[i][m+1].y!=contours[i][m].y)){
+									disCounterPixel[j][m]+=1.4142135f;
+								}else{
+									disCounterPixel[j][m]++;
+								}
+							}
+						}else if(j > k){
+							for(int m = j;m<contours[i].size();m++){
+								disPixel[j][m] = disPixel[m][j];
+							}
+						}else{
+							disPixel[j][k] = 0;
+						}
+					}
+				}
+
+				//3.Replace troublesome archs by lines
+				for(int j = 0; j<contours[i].size();j++){
+					for(int k=0; k<contours[i].size();k++){
+						if(disPixel[j][k]<disCounterPixel[j][k]){
+							float disOfjk = (float)sqrt((double)((contours[i][j].x - contours[i][k].x)*(contours[i][j].x - contours[i][k].x)+(contours[i][j].y - contours[i][k].y)*(contours[i][j].y - contours[i][k].y)));
+
+							if(disCounterPixel[j][k]/disOfjk>1.5){
+								//Re
+								ALine aline;
+								aline.BeginX=contours[i][j].x;
+								aline.BeginY=contours[i][j].y;
+								aline.EndX=contours[i][k].x;
+								aline.EndY=contours[i][k].y;
+								repairedByALine.push_back(aline);// aline is copied into vector, different from java's storage of pointer.
+							}
+						}/*
+						else if(disPixel[j][k]>disCounterPixel[j][k]){
+							;
+						}else{
+							;
+						}*/ //have nonsense due to symmetry
+			}
 		}
-		*/
+		
 		ImageType2D::Pointer itkDrawing;
 		try{
 		itkDrawing=itk::OpenCVImageBridge::CVMatToITKImage<ImageType2D>(drawing);
