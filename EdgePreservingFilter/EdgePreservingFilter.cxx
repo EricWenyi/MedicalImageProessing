@@ -76,7 +76,8 @@ int main( int argc, char* argv[] ){
 
 	for(inIterator.GoToBegin(); !inIterator.IsAtEnd(); inIterator.NextSlice()){
 		ImageType3D::IndexType sliceIndex = inIterator.GetIndex();
-
+		
+		printf("  Slice Index --- %d ---",inIterator.GetIndex());
 		ExtractFilterType::InputImageRegionType::SizeType sliceSize = inIterator.GetRegion().GetSize();
 		sliceSize[2] = 0;
 

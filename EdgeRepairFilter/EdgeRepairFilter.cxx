@@ -74,7 +74,7 @@ int main( int argc, char* argv[] ){
 
 	for(inIterator.GoToBegin(); !inIterator.IsAtEnd(); inIterator.NextSlice()){
 		ImageType3D::IndexType sliceIndex = inIterator.GetIndex();
-
+		printf(" Slice Index --- %d ---",inIterator.GetIndex());
 		ExtractFilterType::InputImageRegionType::SizeType sliceSize = inIterator.GetRegion().GetSize();
 		sliceSize[2] = 0;
 
@@ -126,7 +126,7 @@ int main( int argc, char* argv[] ){
 			int EndY;
 		};
 		Vector<ALine> repairedByALine;
-
+	try{
 		for (int i = 0; i< contours.size(); i++)
 		{
 		    int closed = 1;
@@ -181,43 +181,46 @@ int main( int argc, char* argv[] ){
 					for(int k=0; k<contours[i].size();k++){
 						if(j < k){
 							for(int m = j; m<k-1 ;m++){
-								if((contours[i][m+1].x != contours[i][m].x)||(contours[i][m+1].y!=contours[i][m].y)){
-									disPixel[j][m]+=1.4142135f;
+								if((contours[i][m+1].x != contours[i][m].x)&&(contours[i][m+1].y!=contours[i][m].y)){ ////Wrong &&
+									disPixel[j][k]+=1.4142135f; //Wrong k.
 								}else{
 									disPixel[j][m]++;
 								}
 							}
 							for(int m=0; m<j-1; m++){
 								if((contours[i][m+1].x != contours[i][m].x)||(contours[i][m+1].y!=contours[i][m].y)){
-									disCounterPixel[j][m]+=1.4142135f;
+									disCounterPixel[j][k]+=1.4142135f; //Wrong k
 								}else{
-									disCounterPixel[j][m]++;
+									disCounterPixel[j][k]++;
 								}
 							}
 							for(int m=k;m<contours[i].size()-1;m++){
 								if((contours[i][m+1].x != contours[i][m].x)||(contours[i][m+1].y!=contours[i][m].y)){
-									disCounterPixel[j][m]+=1.4142135f;
+									disCounterPixel[j][k]+=1.4142135f; //Wrong k
 								}else{
-									disCounterPixel[j][m]++;
+									disCounterPixel[j][k]++;
 								}
 							}
 						}else if(j > k){
 							for(int m = j;m<contours[i].size();m++){
-								disPixel[j][m] = disPixel[m][j];
+								disPixel[j][k] = disPixel[k][j]; //Wrong CounterPixel
+								disCounterPixel[j][k] = disCounterPixel[k][j];
 							}
 						}else{
 							disPixel[j][k] = 0;
+							disCounterPixel[j][k] = 0;
 						}
 					}
 				}
-
+				printf( "i:%d distance calc OK\n",i);
 				//3.Replace troublesome archs by lines
 				for(int j = 0; j<contours[i].size();j++){
-					for(int k=0; k<contours[i].size();k++){
+					for(int k=0; k<contours[i].size();k++){ //wrong -> add if j< k 
+						if(j<k){
 						if(disPixel[j][k]<disCounterPixel[j][k]){
 							float disOfjk = (float)sqrt((double)((contours[i][j].x - contours[i][k].x)*(contours[i][j].x - contours[i][k].x)+(contours[i][j].y - contours[i][k].y)*(contours[i][j].y - contours[i][k].y)));
 
-							if(disCounterPixel[j][k]/disOfjk>1.5){
+							if(disPixel[j][k]/disOfjk>1.5){ //Wrong CounterPixel -> disPixel
 								//Re
 								ALine aline;
 								aline.contour=i;
@@ -227,17 +230,31 @@ int main( int argc, char* argv[] ){
 								aline.EndY=contours[i][k].y;
 								repairedByALine.push_back(aline);// aline is copied into vector, different from java's storage of pointer.
 							}
-						}/*
-						else if(disPixel[j][k]>disCounterPixel[j][k]){
-							;
 						}else{
-							;
-						}*/ //have nonsense due to symmetry
+							float disOfjk = (float)sqrt((double)((contours[i][j].x - contours[i][k].x)*(contours[i][j].x - contours[i][k].x)+(contours[i][j].y - contours[i][k].y)*(contours[i][j].y - contours[i][k].y)));
+							if(disCounterPixel[j][k]/disOfjk>1.5){ 
+								//Re
+								ALine aline;
+								aline.contour=i;
+								aline.BeginX=contours[i][j].x;
+								aline.BeginY=contours[i][j].y;
+								aline.EndX=contours[i][k].x;
+								aline.EndY=contours[i][k].y;
+								repairedByALine.push_back(aline);// aline is copied into vector, different from java's storage of pointer.
+							}
+						}
+						}
 			}
 		}
+				printf( "i:%d distance rep calc OK\n",i);
 	}
 }
-		for(int it=0;it<repairedByALine.size();it++){
+}catch(Exception &e){
+	std::cerr << "Exception: "<< e.msg <<" !" << std::endl;
+	return EXIT_FAILURE;
+	}
+		printf("%d Detecting is OK\n",inIterator.GetIndex());
+		for(int it=0;it<repairedByALine.size();it){
 			int& i = repairedByALine[it].contour;
 /*			int beginNum;
 			int endNum;
@@ -256,9 +273,8 @@ int main( int argc, char* argv[] ){
 			}
 */
 			int deletePixelOnContour = -1;
-			//TODO: 还没考虑位置关系
 			for(vector<cv::Point>::iterator iter = contours[i].begin();iter != contours[i].end();iter++){
-				if(((*iter).x == repairedByALine[it].BeginX)&&((*iter).y == repairedByALine[it].BeginX)){
+				if(((*iter).x == repairedByALine[it].BeginX)&&((*iter).y == repairedByALine[it].BeginX)){ //Wrong BeginY
 					deletePixelOnContour = 1;
 				}
 				if(((*iter).x == repairedByALine[it].EndX)&&((*iter).y == repairedByALine[it].EndY)){
@@ -277,7 +293,7 @@ int main( int argc, char* argv[] ){
 					iter = iter++;
 					for(int p = 0; p<(repairedByALine[it].EndX-repairedByALine[it].BeginX);p++){
 						cv::Point linePoint;
-						linePoint.x = repairedByALine[it].BeginX+p; //TODO:还没考虑begin end的位置关系，包括X Y的大小关系
+						linePoint.x = repairedByALine[it].BeginX+p; 
 						linePoint.y = repairedByALine[it].BeginY+(repairedByALine[it].EndY-repairedByALine[it].BeginY)/(repairedByALine[it].EndX-repairedByALine[it].BeginX)*p;
 						iter = contours[i].insert(iter,linePoint);
 					}
@@ -294,6 +310,7 @@ int main( int argc, char* argv[] ){
 			std::cerr << excp << std::endl;
 			return EXIT_FAILURE;
 		}
+		printf(" %d ITK Drawing is OK\n",inIterator.GetIndex());
 		joinSeries->PushBackInput(itkDrawing );
 }
 
