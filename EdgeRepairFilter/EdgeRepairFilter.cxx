@@ -72,9 +72,10 @@ int main( int argc, char* argv[] ){
 	joinSeries->SetOrigin(originImage3D->GetOrigin()[2]);
 	joinSeries->SetSpacing(originImage3D->GetSpacing()[2]);
 
+	int tempInCounter = 0;
 	for(inIterator.GoToBegin(); !inIterator.IsAtEnd(); inIterator.NextSlice()){
 		ImageType3D::IndexType sliceIndex = inIterator.GetIndex();
-		printf(" Slice Index --- %d ---",inIterator.GetIndex());
+		printf(" Slice Index --- %d ---",tempInCounter++);
 		ExtractFilterType::InputImageRegionType::SizeType sliceSize = inIterator.GetRegion().GetSize();
 		sliceSize[2] = 0;
 
@@ -106,13 +107,7 @@ int main( int argc, char* argv[] ){
 
 
 
-  /// Draw contours
-		Mat drawing = Mat::zeros( img.size(), CV_8UC3 );
-		for( int i = 0; i< contours.size(); i++ )
-		{
-			 Scalar color = Scalar( rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255) );
-			drawContours( drawing, contours, i, color, 2, 8, hierarchy, 0, Point() );
-		}
+
 
 		//TODO
 		//1.Check if it is a closed circle,by Eu distance of each neighbor pixels <=sqrt(2)
@@ -129,19 +124,23 @@ int main( int argc, char* argv[] ){
 	try{
 		for (int i = 0; i< contours.size(); i++)
 		{
-		    int closed = 1;
+			int isContinuing = 1;
 			for(int j = 0; j<(contours[i].size()-1);j++){
 				//1. Check whether circle is closed
 				if(abs(contours[i][j+1].x-contours[i][j].x)+abs(contours[i][j+1].y-contours[i][j].y)>2){
-					closed = 0;
+					printf("contours[%d] not continuing\n",i);
+					isContinuing = 0;
 					break;
 				}
 			}
-			if(closed == 0){
-				break;
+			if(isContinuing == 0){
+				printf("Skip contours[%d] \n",i);
+				continue;
 			}else{
+			
 				//2.Sum of the on circle distance in two directions
-				
+				    
+				printf("Enter %d/%d of contours\n",i,contours.size());
 				    float *disClockWise;
 					float **disPixel;
 
@@ -149,7 +148,7 @@ int main( int argc, char* argv[] ){
 
 					disClockWise = (float *)malloc(sizeof(float)*contours[i].size()*contours[i].size());
 					disPixel =  (float **)malloc(sizeof(float)*contours[i].size());
-					for(i =0; i< contours[i].size();i++)
+					for(int i =0; i< contours[i].size();i++)
 					{
 						disPixel[i] = &disClockWise[i * contours[i].size()];
 					}
@@ -161,7 +160,7 @@ int main( int argc, char* argv[] ){
 
 					disCounterClockWise = (float *)malloc(sizeof(float)*contours[i].size()*contours[i].size());
 					disCounterPixel =  (float **)malloc(sizeof(float)*contours[i].size());
-					for(i =0; i< contours[i].size();i++)
+					for(int i =0; i< contours[i].size();i++)
 					{
 						disCounterPixel[i] = &disCounterClockWise[i * contours[i].size()];
 					}
@@ -173,11 +172,8 @@ int main( int argc, char* argv[] ){
 	//				free(power);
 
 
-
+				try{
 				for(int j = 0; j<contours[i].size();j++){
-					
-
-
 					for(int k=0; k<contours[i].size();k++){
 						if(j < k){
 							for(int m = j; m<k-1 ;m++){
@@ -212,6 +208,11 @@ int main( int argc, char* argv[] ){
 						}
 					}
 				}
+				}catch(...){
+					printf("distanceCalc Error\n");
+					return EXIT_FAILURE;
+				}
+
 				printf( "i:%d distance calc OK\n",i);
 				//3.Replace troublesome archs by lines
 				for(int j = 0; j<contours[i].size();j++){
@@ -247,10 +248,17 @@ int main( int argc, char* argv[] ){
 			}
 		}
 				printf( "i:%d distance rep calc OK\n",i);
+//				free(disPixel);
+//				free(disClockWise);
+//				free(disCounterPixel);
+//				free(disCounterClockWise);
+				
 	}
+	
+
 }
-}catch(Exception &e){
-	std::cerr << "Exception: "<< e.msg <<" !" << std::endl;
+}catch(...){
+	std::cerr << "Exception: Caught" << std::endl;
 	return EXIT_FAILURE;
 	}
 		printf("%d Detecting is OK\n",inIterator.GetIndex());
@@ -301,6 +309,13 @@ int main( int argc, char* argv[] ){
 			}
 		}
 
+		  /// Draw contours
+		Mat drawing = Mat::zeros( img.size(), CV_8UC3 );
+		for( int i = 0; i< contours.size(); i++ )
+		{
+			 Scalar color = Scalar( rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255) );
+			drawContours( drawing, contours, i, color, 2, 8, hierarchy, 0, Point() );
+		}
 
 		ImageType2D::Pointer itkDrawing;
 		try{
