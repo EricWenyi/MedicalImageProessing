@@ -97,32 +97,46 @@ inline int
 KdTreeBasedKmeansEstimator< TKdTree >
 ::GetClosestCandidate(ParameterType & measurements,
                       std::vector< int > & validIndexes,
-					  double R)
-{
+					  double R )
+{/*
   int    closest = 0;
   double closestDistance = NumericTraits< double >::max();
   double tempDistance;
   int i = 0;
-  
+
   std::vector< int >::iterator iter = validIndexes.begin();
+  //std::cout<<validIndexes.size()<<std::endl;//2
   while ( iter != validIndexes.end() )
     {
+	//std::cout<<m_CandidateVector.Size()<<std::endl;//2
     tempDistance =
       m_DistanceMetric->Evaluate(m_CandidateVector[*iter].Centroid,
                                  measurements);
-	
+	//std::cout<<tempDistance<<"			"<<std::endl;
 	if ( i == 0 ){
 		tempDistance /= R;
 		i--;
 	}
-	
+
     if ( tempDistance < closestDistance )
       {
-      closest = *iter;
+      closest = *iter; 
       closestDistance = tempDistance;
       }
     ++iter;
-    }
+	//std::cout<<tempDistance<<"			"<<closest<<std::endl;//有0有1
+    }*/
+	int closest;
+	double distance0 = m_DistanceMetric->Evaluate(m_CandidateVector[0].Centroid, measurements);
+	double distance1 = m_DistanceMetric->Evaluate(m_CandidateVector[1].Centroid, measurements);
+	//if ( distance0 != distance1 )
+		//std::cout<<distance0<<"			"<<distance1<<std::endl;
+	if ( distance0 / distance1 > R ){
+		closest = 1;
+	} else {
+		closest = 0;
+	}//手写也OK，结果一样
+	//std::cout<<closest<<std::endl;
   return closest;
 }
 
@@ -149,20 +163,24 @@ KdTreeBasedKmeansEstimator< TKdTree >
       m_TempVertex[i] = upperBound[i];
       }
     }
-  
+
+  if ( closest == 1 )
+	std::cout<<closest<<std::endl;
   double distance0 = m_DistanceMetric->Evaluate(pointA, m_TempVertex);
   double distance1 = m_DistanceMetric->Evaluate(pointB, m_TempVertex);
 
+  //there are some problems
+  //std::cout<<distance0<<"			"<<distance1<<std::endl;
+  
   if ( closest == 0 ){
-	  distance0 /= R;
-  }
-
-  if ( closest == 1 ){
-	  distance1 /= R;
+	  distance0 *= R;
   }
   
-  if ( distance0 >=
-       distance1 )
+  if ( closest == 1 ){
+	  distance1 *= R;
+  }
+  
+  if ( distance0 >= distance1 )
     {
     return true;
     }
@@ -177,7 +195,7 @@ KdTreeBasedKmeansEstimator< TKdTree >
          std::vector< int > validIndexes,
          MeasurementVectorType & lowerBound,
          MeasurementVectorType & upperBound,
-		 double R)
+		 double R )
 {
   unsigned int i, j;
 
@@ -223,7 +241,7 @@ KdTreeBasedKmeansEstimator< TKdTree >
     node->GetWeightedCentroid(weightedCentroid);
     node->GetCentroid(centroid);
 
-    closest =
+    /*closest =
       this->GetClosestCandidate(centroid, validIndexes, R);
     closestPosition = m_CandidateVector[closest].Centroid;
     std::vector< int >::iterator iter = validIndexes.begin();
@@ -233,9 +251,7 @@ KdTreeBasedKmeansEstimator< TKdTree >
       if ( *iter != closest
            && this->IsFarther(m_CandidateVector[*iter].Centroid,
                               closestPosition,
-                              lowerBound, upperBound,
-							  closest,
-							  R) )
+                              lowerBound, upperBound, closest, R))
         {
         iter = validIndexes.erase(iter);
         continue;
@@ -261,7 +277,7 @@ KdTreeBasedKmeansEstimator< TKdTree >
         }
       }
     else
-      {
+      {*/
       unsigned int    partitionDimension;
       MeasurementType partitionValue;
       MeasurementType tempValue;
@@ -270,7 +286,7 @@ KdTreeBasedKmeansEstimator< TKdTree >
       tempValue = upperBound[partitionDimension];
       upperBound[partitionDimension] = partitionValue;
       this->Filter(node->Left(), validIndexes,
-                   lowerBound, upperBound, R);
+                   lowerBound, upperBound, R );
       upperBound[partitionDimension] = tempValue;
 
       tempValue = lowerBound[partitionDimension];
@@ -278,7 +294,7 @@ KdTreeBasedKmeansEstimator< TKdTree >
       this->Filter(node->Right(), validIndexes,
                    lowerBound, upperBound, R);
       lowerBound[partitionDimension] = tempValue;
-      }
+      //}
     }
 }
 

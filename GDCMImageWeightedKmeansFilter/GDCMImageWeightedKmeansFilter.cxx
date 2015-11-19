@@ -203,6 +203,9 @@ int main( int argc, char * argv[] ){
 
 		//从estimator获取最终的各类中心的均值并输出
 		EstimatorType::ParametersType estimatedMeans = estimator->GetParameters();
+
+		std::cout<<"slice No."<<medianSliceIndex[2]+1<<std::endl;
+
 		for ( unsigned int i = 0; i < 4; ++i ){
 			std::cout << "cluster[" << i << "] " << std::endl;
 			std::cout << "	estimated mean : " << estimatedMeans[i] << std::endl;
