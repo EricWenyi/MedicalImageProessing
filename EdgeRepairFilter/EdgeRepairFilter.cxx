@@ -182,7 +182,7 @@ int main( int argc, char* argv[] ){
 				for(int j = 0; j<contours[i].size();j++){
 					for(int k=0; k<contours[i].size();k++){
 						if(j < k){
-							for(int m = j; m<k-1 ;m++){
+							for(int m = j; m<k ;m++){
 								try{
 								if((contours[i][m+1].x != contours[i][m].x)&&(contours[i][m+1].y!=contours[i][m].y)){ ////Wrong &&
 									disPixel[j][k]+=1.4142135f; //Wrong k.
@@ -194,7 +194,7 @@ int main( int argc, char* argv[] ){
 									return EXIT_FAILURE;
 								}
 							}
-							for(int m=0; m<j-1; m++){
+							for(int m=0; m<j; m++){
 								try{
 								if((contours[i][m+1].x != contours[i][m].x)||(contours[i][m+1].y!=contours[i][m].y)){
 									disCounterPixel[j][k]+=1.4142135f; //Wrong k
@@ -218,11 +218,18 @@ int main( int argc, char* argv[] ){
 									return EXIT_FAILURE;
 								}
 							}
+							{
+								if((contours[i][contours[i].size()-1].x != contours[i][0].x)||(contours[i][contours[i].size()-1].y!=contours[i][0].y)){
+									disCounterPixel[j][contours[i].size()-1]+=1.4142135f;
+								}else{
+									disCounterPixel[j][contours[i].size()-1]+=1.0f;
+								}
+							}
 						}else if(j > k){
 							try{
 							for(int m = j;m<contours[i].size();m++){
-								disPixel[j][k] = disPixel[k][j]; //Wrong CounterPixel
-								disCounterPixel[j][k] = disCounterPixel[k][j];
+								disPixel[j][k] = disCounterPixel[k][j]; //Wrong CounterPixel
+								disCounterPixel[j][k] = disPixel[k][j];
 							}
 							}catch(...){
 								printf("Error comes from {else if}, contours[%d].size() = %d;j: %d k: %d\n ; disPixel[%d][%d] = %f; disCounterPixel[%d][%d] = %f",i,contours[i].size(),j,k,k,j,disPixel[k][j],k,j,disCounterPixel[k][j]);
@@ -255,7 +262,7 @@ int main( int argc, char* argv[] ){
 				//3.Replace troublesome archs by lines
 				for(int j = 0; j<contours[i].size();j++){
 					for(int k=0; k<contours[i].size();k++){ //wrong -> add if j< k 
-						printf("disReplace: disPixel[%d][%d]= %f;disCounterPixel[%d][%d]=%f\n",j,k,disPixel[j][k],j,k,disCounterPixel[j][k]);
+						//printf("disReplace: disPixel[%d][%d]= %f;disCounterPixel[%d][%d]=%f\n",j,k,disPixel[j][k],j,k,disCounterPixel[j][k]);
 						if(j<k){
 						if(disPixel[j][k]<disCounterPixel[j][k]){
 							float disOfjk = (float)sqrt((double)((contours[i][j].x - contours[i][k].x)*(contours[i][j].x - contours[i][k].x)+(contours[i][j].y - contours[i][k].y)*(contours[i][j].y - contours[i][k].y)));
@@ -269,7 +276,7 @@ int main( int argc, char* argv[] ){
 								aline.EndX=contours[i][k].x;
 								aline.EndY=contours[i][k].y;
 								repairedByALine.push_back(aline);// aline is copied into vector, different from java's storage of pointer.
-								printf("(%d,%d),(%d,%d) is connected by a line\n",aline.BeginX,aline.BeginY,aline.EndX,aline.EndY);
+								//printf("[%d,%d](%d,%d),(%d,%d) is connected by a line\n",j,k,aline.BeginX,aline.BeginY,aline.EndX,aline.EndY);
 							}
 						}else{
 							float disOfjk = (float)sqrt((double)((contours[i][j].x - contours[i][k].x)*(contours[i][j].x - contours[i][k].x)+(contours[i][j].y - contours[i][k].y)*(contours[i][j].y - contours[i][k].y)));
@@ -282,7 +289,7 @@ int main( int argc, char* argv[] ){
 								aline.EndX=contours[i][k].x;
 								aline.EndY=contours[i][k].y;
 								repairedByALine.push_back(aline);// aline is copied into vector, different from java's storage of pointer.
-								printf("(%d,%d),(%d,%d) is connected by a line\n",aline.BeginX,aline.BeginY,aline.EndX,aline.EndY);
+								//printf("(%d,%d),(%d,%d) is connected by a line\n",aline.BeginX,aline.BeginY,aline.EndX,aline.EndY);
 							}
 						}
 						}
@@ -302,7 +309,7 @@ int main( int argc, char* argv[] ){
 	std::cerr << "Exception: Caught" << std::endl;
 	return EXIT_FAILURE;
 	}
-		printf("%d Detecting is OK\n",inIterator.GetIndex());
+		printf("%d Detecting is OK\n",tempInCounter-1);
 		for(int it=0;it<repairedByALine.size();it){
 			int& i = repairedByALine[it].contour;
 /*			int beginNum;
