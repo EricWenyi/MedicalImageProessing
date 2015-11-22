@@ -119,11 +119,13 @@ int main( int argc, char* argv[] ){
 			int BeginY;
 			int EndX;
 			int EndY;
+			int clockwise;
 		};
-		Vector<ALine> repairedByALine;
+		
 	try{
 		for (int i = 0; i< contours.size(); i++)
 		{
+			Vector<ALine> repairedByALine;
 			int isContinuing = 1;
 			for(int j = 0; j<(contours[i].size()-1);j++){
 				//1. Check whether circle is closed
@@ -196,7 +198,7 @@ int main( int argc, char* argv[] ){
 							}
 							for(int m=0; m<j; m++){
 								try{
-								if((contours[i][m+1].x != contours[i][m].x)||(contours[i][m+1].y!=contours[i][m].y)){
+								if((contours[i][m+1].x != contours[i][m].x)&&(contours[i][m+1].y!=contours[i][m].y)){
 									disCounterPixel[j][k]+=1.4142135f; //Wrong k
 								}else{
 									disCounterPixel[j][k]+=1.0f;
@@ -208,7 +210,7 @@ int main( int argc, char* argv[] ){
 							}
 							for(int m=k;m<contours[i].size()-1;m++){
 								try{
-								if((contours[i][m+1].x != contours[i][m].x)||(contours[i][m+1].y!=contours[i][m].y)){
+								if((contours[i][m+1].x != contours[i][m].x)&&(contours[i][m+1].y!=contours[i][m].y)){
 									disCounterPixel[j][k]+=1.4142135f; //Wrong k
 								}else{
 									disCounterPixel[j][k]+=1.0f;
@@ -219,10 +221,10 @@ int main( int argc, char* argv[] ){
 								}
 							}
 							{
-								if((contours[i][contours[i].size()-1].x != contours[i][0].x)||(contours[i][contours[i].size()-1].y!=contours[i][0].y)){
-									disCounterPixel[j][contours[i].size()-1]+=1.4142135f;
+								if((contours[i][contours[i].size()-1].x != contours[i][0].x)&&(contours[i][contours[i].size()-1].y!=contours[i][0].y)){
+									disCounterPixel[j][k]+=1.4142135f;
 								}else{
-									disCounterPixel[j][contours[i].size()-1]+=1.0f;
+									disCounterPixel[j][k]+=1.0f;
 								}
 							}
 						}else if(j > k){
@@ -275,6 +277,7 @@ int main( int argc, char* argv[] ){
 								aline.BeginY=contours[i][j].y;
 								aline.EndX=contours[i][k].x;
 								aline.EndY=contours[i][k].y;
+								aline.clockwise=1;
 								repairedByALine.push_back(aline);// aline is copied into vector, different from java's storage of pointer.
 								//printf("[%d,%d](%d,%d),(%d,%d) is connected by a line\n",j,k,aline.BeginX,aline.BeginY,aline.EndX,aline.EndY);
 							}
@@ -288,74 +291,74 @@ int main( int argc, char* argv[] ){
 								aline.BeginY=contours[i][j].y;
 								aline.EndX=contours[i][k].x;
 								aline.EndY=contours[i][k].y;
+								aline.clockwise=0;
 								repairedByALine.push_back(aline);// aline is copied into vector, different from java's storage of pointer.
-								//printf("(%d,%d),(%d,%d) is connected by a line\n",aline.BeginX,aline.BeginY,aline.EndX,aline.EndY);
+								//printf("else [%d,%d](%d,%d),(%d,%d) is connected by a line\n",j,k,aline.BeginX,aline.BeginY,aline.EndX,aline.EndY);
 							}
 						}
 						}
 			}
 		}
 				printf( "i:%d distance rep calc OK\n",i);
+
+
 //				free(disPixel);
 //				free(disClockWise);
 //				free(disCounterPixel);
 //				free(disCounterClockWise);
 				
 	}
-	
+	printf("%d Detecting is OK, enter repair...\n",tempInCounter-1);
 
+
+
+	for(int it=0;it<repairedByALine.size();it++){
+		printf("repairInfo: it:%d, BeginX:%d, BeginY:%d, EndX:%d, EndY:%d\n",it,repairedByALine[it].BeginX,repairedByALine[it].BeginY,repairedByALine[it].EndX,repairedByALine[it].EndY);
+		if(repairedByALine[it].clockwise == 1){
+			vector<cv::Point>::iterator vecIt = contours[i].begin();
+			for(;((*vecIt).x == repairedByALine[it].BeginX)&&((*vecIt).y == repairedByALine[it].BeginY);vecIt++);
+			printf("Found! --");
+			for(;((*vecIt).x!=repairedByALine[it].EndX)&&((*vecIt).y!=repairedByALine[it].EndY);){
+				int ifbreak = 0;
+				for(int tempit=0;tempit<repairedByALine.size();tempit++){
+					if(((*vecIt).x ==repairedByALine[tempit].BeginX)&&((*vecIt).x==repairedByALine[tempit].BeginY))
+						ifbreak = 1;
+				}
+				if(ifbreak == 1)
+					break;
+				printf("Erase (%d,%d)\n",(*vecIt).x,(*vecIt).y);
+				vecIt=contours[i].erase(vecIt);
+			}
+		}else{
+		}
+
+	}
+	printf("Erase OK\n");
+	for(int it=0;it<repairedByALine.size();it++){
+		if(repairedByALine[it].clockwise == 1){
+			vector<cv::Point>::iterator vecIt = contours[i].begin();
+			const int spacingX = repairedByALine[it].EndX-repairedByALine[it].BeginX;
+			const int spacingY = repairedByALine[it].EndY-repairedByALine[it].BeginY;
+			if((spacingX >0)&&spacingY>0){
+			for(;((*vecIt).x == repairedByALine[it].BeginX)&&((*vecIt).y == repairedByALine[it].BeginY);vecIt++);
+			vecIt++;
+			for(int p =0;p<spacingX;p++){
+						cv::Point linePoint;
+						linePoint.x = repairedByALine[it].BeginX+p; 
+						linePoint.y = repairedByALine[it].BeginY+spacingY/spacingX*p;
+						vecIt = contours[i].insert(vecIt,linePoint);
+			}
+			}
+		}else{
+		}
+
+	}
+	printf("Adding OK\n");
 }
 }catch(...){
 	std::cerr << "Exception: Caught" << std::endl;
 	return EXIT_FAILURE;
 	}
-		printf("%d Detecting is OK\n",tempInCounter-1);
-		for(int it=0;it<repairedByALine.size();it){
-			int& i = repairedByALine[it].contour;
-/*			int beginNum;
-			int endNum;
-			for(int j;j<contours[i].size();j++){
-				if((contours[i][j].x==repairedByALine[it].BeginX)&&(contours[i][j].y==repairedByALine[it].BeginY)){
-					beginNum = j;
-				}
-				if((contours[i][j].x==repairedByALine[it].EndX)&&(contours[i][j].y==repairedByALine[it].EndY)){
-					endNum = j;
-				}
-			}
-
-			if(beginNum<endNum){
-				contours[i].erase(beginNum+1,endNum-1);
-
-			}
-*/
-			int deletePixelOnContour = -1;
-			for(vector<cv::Point>::iterator iter = contours[i].begin();iter != contours[i].end();iter++){
-				if(((*iter).x == repairedByALine[it].BeginX)&&((*iter).y == repairedByALine[it].BeginX)){ //Wrong BeginY
-					deletePixelOnContour = 1;
-				}
-				if(((*iter).x == repairedByALine[it].EndX)&&((*iter).y == repairedByALine[it].EndY)){
-					deletePixelOnContour = 0;
-				}
-				if(deletePixelOnContour = 1){
-					 iter = contours[i].erase(iter);
-				}
-				if(iter == contours[i].end()){
-					break;
-				}
-			}
-			//add contour pixels
-			for(vector<cv::Point>::iterator iter = contours[i].begin();iter != contours[i].end();iter++){
-				if(((*iter).x == repairedByALine[it].BeginX)&&((*iter).y == repairedByALine[it].BeginX)){
-					iter = iter++;
-					for(int p = 0; p<(repairedByALine[it].EndX-repairedByALine[it].BeginX);p++){
-						cv::Point linePoint;
-						linePoint.x = repairedByALine[it].BeginX+p; 
-						linePoint.y = repairedByALine[it].BeginY+(repairedByALine[it].EndY-repairedByALine[it].BeginY)/(repairedByALine[it].EndX-repairedByALine[it].BeginX)*p;
-						iter = contours[i].insert(iter,linePoint);
-					}
-				}
-			}
-		}
 
 		  /// Draw contours
 		Mat drawing = Mat::zeros( img.size(), CV_8UC3 );
