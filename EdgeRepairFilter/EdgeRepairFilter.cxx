@@ -26,12 +26,12 @@ int main( int argc, char* argv[] ){
 	if( argc < 3 ){
 		std::cerr << "Usage: " << argv[0] << " InputImageFile OutputImageFile" << std::endl;
 		return EXIT_FAILURE;
-    }
+	}
 	//三维图像类型
 	typedef signed short PixelType3D;
 	const unsigned int Dimension3D = 3;
 	typedef itk::Image< PixelType3D, Dimension3D > ImageType3D;
-	
+
 	//二维图像类型
 	const unsigned int Dimension2D = 2;
 	typedef unsigned char PixelType2D;//此处原为signed short，应设置为float类型，下文CurvatureFlowImageFilter所要求，否则将会弹窗报错至失去响应
@@ -82,7 +82,7 @@ int main( int argc, char* argv[] ){
 		ExtractFilterType::InputImageRegionType sliceRegion = inIterator.GetRegion();
 		sliceRegion.SetSize( sliceSize );
 		sliceRegion.SetIndex( sliceIndex );
-		
+
 		ExtractFilterType::Pointer inExtractor = ExtractFilterType::New();
 		inExtractor->SetExtractionRegion( sliceRegion );
 		inExtractor->InPlaceOn();
@@ -96,13 +96,13 @@ int main( int argc, char* argv[] ){
 			std::cerr << excp << std::endl;
 			return EXIT_FAILURE;
 		}
-	
+
 		using namespace cv;
 		Mat img = itk::OpenCVImageBridge::ITKImageToCVMat< ImageType2D >( inExtractor->GetOutput() );
 		vector<vector<Point>> contours;
 		vector<Vec4i> hierarchy;
 		RNG rng(12345);
-  /// Find contours
+		/// Find contours
 		findContours( img, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0) );
 
 
@@ -115,35 +115,36 @@ int main( int argc, char* argv[] ){
 		//3.Replace troublesome archs by lines
 		struct ALine{
 			int contour;
+			int BeginN;
 			int BeginX;
 			int BeginY;
+			int EndN;
 			int EndX;
 			int EndY;
-			int clockwise;
 		};
-		
-	try{
-		for (int i = 0; i< contours.size(); i++)
-		{
-			Vector<ALine> repairedByALine;
-			int isContinuing = 1;
-			for(int j = 0; j<(contours[i].size()-1);j++){
-				//1. Check whether circle is closed
-				if(abs(contours[i][j+1].x-contours[i][j].x)+abs(contours[i][j+1].y-contours[i][j].y)>2){
-					printf("contours[%d] not continuing\n",i);
-					isContinuing = 0;
-					break;
+
+		try{
+			for (int i = 0; i< contours.size(); i++)
+			{
+				Vector<ALine> repairedByALine;
+				int isContinuing = 1;
+				for(int j = 0; j<(contours[i].size()-1);j++){
+					//1. Check whether circle is closed
+					if(abs(contours[i][j+1].x-contours[i][j].x)+abs(contours[i][j+1].y-contours[i][j].y)>2){
+						printf("contours[%d] not continuing\n",i);
+						isContinuing = 0;
+						break;
+					}
 				}
-			}
-			if(isContinuing == 0){
-				printf("Skip contours[%d] \n",i);
-				continue;
-			}else{
-			
-				//2.Sum of the on circle distance in two directions
-				    
-				printf("Enter %d/%d of contours\n",i,contours.size());
-				    float *disClockWise;
+				if(isContinuing == 0){
+					printf("Skip contours[%d] \n",i);
+					continue;
+				}else{
+
+					//2.Sum of the on circle distance in two directions
+
+					printf("Enter %d/%d of contours\n",i,contours.size());
+					float *disClockWise;
 					float **disPixel;
 
 
@@ -167,7 +168,7 @@ int main( int argc, char* argv[] ){
 						disCounterPixel[a] = &disCounterClockWise[a* contours[i].size()];
 					}
 
-					
+
 					for(int j =0;j<contours[i].size();j++){
 						for(int  k = 0; k<contours[i].size();k++){
 							disPixel[j][k]=0;
@@ -176,201 +177,193 @@ int main( int argc, char* argv[] ){
 					}
 
 					//...
-	//				free(subpower);
-	//				free(power);
+					//				free(subpower);
+					//				free(power);
 
 
-				try{
-				for(int j = 0; j<contours[i].size();j++){
-					for(int k=0; k<contours[i].size();k++){
-						if(j < k){
-							for(int m = j; m<k ;m++){
-								try{
-								if((contours[i][m+1].x != contours[i][m].x)&&(contours[i][m+1].y!=contours[i][m].y)){ ////Wrong &&
-									disPixel[j][k]+=1.4142135f; //Wrong k.
-								}else{
-									disPixel[j][k]+=1.0f;
-								}
-								}catch(...){
-									printf("Error comes from for1\n");
-									return EXIT_FAILURE;
-								}
-							}
-							for(int m=0; m<j; m++){
-								try{
-								if((contours[i][m+1].x != contours[i][m].x)&&(contours[i][m+1].y!=contours[i][m].y)){
-									disCounterPixel[j][k]+=1.4142135f; //Wrong k
-								}else{
-									disCounterPixel[j][k]+=1.0f;
-								}
-								}catch(...){
-									printf("Error comes from for2\n");
-									return EXIT_FAILURE;
-								}
-							}
-							for(int m=k;m<contours[i].size()-1;m++){
-								try{
-								if((contours[i][m+1].x != contours[i][m].x)&&(contours[i][m+1].y!=contours[i][m].y)){
-									disCounterPixel[j][k]+=1.4142135f; //Wrong k
-								}else{
-									disCounterPixel[j][k]+=1.0f;
-								}
-								}catch(...){
-									printf("Error comes from for3\n");
-									return EXIT_FAILURE;
-								}
-							}
-							{
-								if((contours[i][contours[i].size()-1].x != contours[i][0].x)&&(contours[i][contours[i].size()-1].y!=contours[i][0].y)){
-									disCounterPixel[j][k]+=1.4142135f;
-								}else{
-									disCounterPixel[j][k]+=1.0f;
-								}
-							}
-						}else if(j > k){
-							try{
-							for(int m = j;m<contours[i].size();m++){
-								disPixel[j][k] = disCounterPixel[k][j]; //Wrong CounterPixel
-								disCounterPixel[j][k] = disPixel[k][j];
-							}
-							}catch(...){
-								printf("Error comes from {else if}, contours[%d].size() = %d;j: %d k: %d\n ; disPixel[%d][%d] = %f; disCounterPixel[%d][%d] = %f",i,contours[i].size(),j,k,k,j,disPixel[k][j],k,j,disCounterPixel[k][j]);
-								for(int x=0;x<contours[i].size();x++){
-									printf("disPixel[0][%d]= %f;\n",x,disPixel[0][x]);
-									printf("disCounterPixel[0][%d]=%f\n",x,disCounterPixel[0][x]);
+					try{
+						for(int j = 0; j<contours[i].size();j++){
+							for(int k=0; k<contours[i].size();k++){
+								if(j < k){
+									for(int m = j; m<k ;m++){
+										try{
+											if((contours[i][m+1].x != contours[i][m].x)&&(contours[i][m+1].y!=contours[i][m].y)){ ////Wrong &&
+												disPixel[j][k]+=1.4142135f; 
+											}else{
+												disPixel[j][k]+=1.0f;
+											}
+										}catch(...){
+											printf("Error comes from for1\n");
+											return EXIT_FAILURE;
+										}
+									}
+									for(int m=0; m<j; m++){
+										try{
+											if((contours[i][m+1].x != contours[i][m].x)&&(contours[i][m+1].y!=contours[i][m].y)){
+												disCounterPixel[j][k]+=1.4142135f;
+											}else{
+												disCounterPixel[j][k]+=1.0f;
+											}
+										}catch(...){
+											printf("Error comes from for2\n");
+											return EXIT_FAILURE;
+										}
+									}
+									for(int m=k;m<contours[i].size()-1;m++){
+										try{
+											if((contours[i][m+1].x != contours[i][m].x)&&(contours[i][m+1].y!=contours[i][m].y)){
+												disCounterPixel[j][k]+=1.4142135f; 
+											}else{
+												disCounterPixel[j][k]+=1.0f;
+											}
+										}catch(...){
+											printf("Error comes from for3\n");
+											return EXIT_FAILURE;
+										}
+									}
+									{
+										if((contours[i][contours[i].size()-1].x != contours[i][0].x)&&(contours[i][contours[i].size()-1].y!=contours[i][0].y)){
+											disCounterPixel[j][k]+=1.4142135f;
+										}else{
+											disCounterPixel[j][k]+=1.0f;
+										}
+									}
+								}else if(j > k){
+									try{
+										for(int m = j;m<contours[i].size();m++){
+											disPixel[j][k] = disCounterPixel[k][j]; 
+											disCounterPixel[j][k] = disPixel[k][j];
+										}
+									}catch(...){
+										printf("Error comes from {else if}, contours[%d].size() = %d;j: %d k: %d\n ; disPixel[%d][%d] = %f; disCounterPixel[%d][%d] = %f",i,contours[i].size(),j,k,k,j,disPixel[k][j],k,j,disCounterPixel[k][j]);
+										for(int x=0;x<contours[i].size();x++){
+											printf("disPixel[0][%d]= %f;\n",x,disPixel[0][x]);
+											printf("disCounterPixel[0][%d]=%f\n",x,disCounterPixel[0][x]);
 
+										}
+
+
+										return EXIT_FAILURE;
+									}
+								}else{
+									try{
+										disPixel[j][k] = 0;
+										disCounterPixel[j][k] = 0;
+									}catch(...){
+										printf("Error comes from else\n");
+										return EXIT_FAILURE;
+									}
 								}
-								
-								
-								return EXIT_FAILURE;
-							}
-						}else{
-							try{
-							disPixel[j][k] = 0;
-							disCounterPixel[j][k] = 0;
-							}catch(...){
-								printf("Error comes from else\n");
-								return EXIT_FAILURE;
 							}
 						}
+					}catch(...){
+						printf("distanceCalc Error\n");
+						return EXIT_FAILURE;
 					}
-				}
-				}catch(...){
-					printf("distanceCalc Error\n");
-					return EXIT_FAILURE;
-				}
 
-				printf( "i:%d distance calc OK\n",i);
-				//3.Replace troublesome archs by lines
-				for(int j = 0; j<contours[i].size();j++){
-					for(int k=0; k<contours[i].size();k++){ //wrong -> add if j< k 
-						//printf("disReplace: disPixel[%d][%d]= %f;disCounterPixel[%d][%d]=%f\n",j,k,disPixel[j][k],j,k,disCounterPixel[j][k]);
-						if(j<k){
-						if(disPixel[j][k]<disCounterPixel[j][k]){
-							float disOfjk = (float)sqrt((double)((contours[i][j].x - contours[i][k].x)*(contours[i][j].x - contours[i][k].x)+(contours[i][j].y - contours[i][k].y)*(contours[i][j].y - contours[i][k].y)));
+					printf( "i:%d distance calc OK\n",i);
+					//3.Replace troublesome archs by lines
+					for(int j = 0; j<contours[i].size();j++){
+						for(int k=0; k<contours[i].size();k++){ 
+							//printf("disReplace: disPixel[%d][%d]= %f;disCounterPixel[%d][%d]=%f\n",j,k,disPixel[j][k],j,k,disCounterPixel[j][k]);
+
+
+							// TODO: judgement: cross or not
 							
-							if(disPixel[j][k]/disOfjk>1.5){ //Wrong CounterPixel -> disPixel
-								//Re
-								ALine aline;
-								aline.contour=i;
-								aline.BeginX=contours[i][j].x;
-								aline.BeginY=contours[i][j].y;
-								aline.EndX=contours[i][k].x;
-								aline.EndY=contours[i][k].y;
-								aline.clockwise=1;
-								repairedByALine.push_back(aline);// aline is copied into vector, different from java's storage of pointer.
-								//printf("[%d,%d](%d,%d),(%d,%d) is connected by a line\n",j,k,aline.BeginX,aline.BeginY,aline.EndX,aline.EndY);
+							
+							
+							
+							if(disPixel[j][k]<disCounterPixel[j][k]){
+								float disOfjk = (float)sqrt((double)((contours[i][j].x - contours[i][k].x)*(contours[i][j].x - contours[i][k].x)+(contours[i][j].y - contours[i][k].y)*(contours[i][j].y - contours[i][k].y)));
+
+								if(disPixel[j][k]/disOfjk>1.5){ 
+									//Re
+									ALine aline;
+									aline.contour=i;
+									aline.BeginN=j;
+									aline.BeginX=contours[i][j].x;
+									aline.BeginY=contours[i][j].y;
+									aline.EndN=k;
+									aline.EndX=contours[i][k].x;
+									aline.EndY=contours[i][k].y;
+									repairedByALine.push_back(aline);// aline is copied into vector, different from java's storage of pointer.
+									//printf("[%d,%d](%d,%d),(%d,%d) is connected by a line\n",j,k,aline.BeginX,aline.BeginY,aline.EndX,aline.EndY);
+								}
 							}
-						}else{
-							float disOfjk = (float)sqrt((double)((contours[i][j].x - contours[i][k].x)*(contours[i][j].x - contours[i][k].x)+(contours[i][j].y - contours[i][k].y)*(contours[i][j].y - contours[i][k].y)));
-							if(disCounterPixel[j][k]/disOfjk>1.5){ 
-								//Re
-								ALine aline;
-								aline.contour=i;
-								aline.BeginX=contours[i][j].x;
-								aline.BeginY=contours[i][j].y;
-								aline.EndX=contours[i][k].x;
-								aline.EndY=contours[i][k].y;
-								aline.clockwise=0;
-								repairedByALine.push_back(aline);// aline is copied into vector, different from java's storage of pointer.
-								//printf("else [%d,%d](%d,%d),(%d,%d) is connected by a line\n",j,k,aline.BeginX,aline.BeginY,aline.EndX,aline.EndY);
+
+
+						}
+						printf( "i:%d distance rep calc OK\n",i);
+
+
+						//				free(disPixel);
+						//				free(disClockWise);
+						//				free(disCounterPixel);
+						//				free(disCounterClockWise);
+
+					}
+					printf("%d Detecting is OK, enter repair...\n",tempInCounter-1);
+
+
+
+					for(int it=0;it<repairedByALine.size();it++){
+						printf("repairInfo: it:%d, BeginX:%d, BeginY:%d, EndX:%d, EndY:%d\n",it,repairedByALine[it].BeginX,repairedByALine[it].BeginY,repairedByALine[it].EndX,repairedByALine[it].EndY);
+
+						vector<cv::Point>::iterator vecIt = contours[i].begin();
+						for(;((*vecIt).x == repairedByALine[it].BeginX)&&((*vecIt).y == repairedByALine[it].BeginY);vecIt++);
+						printf("Found! --");
+						for(;((*vecIt).x!=repairedByALine[it].EndX)&&((*vecIt).y!=repairedByALine[it].EndY);){
+							int ifbreak = 0;
+							for(int tempit=0;tempit<repairedByALine.size();tempit++){
+								if(((*vecIt).x ==repairedByALine[tempit].BeginX)&&((*vecIt).x==repairedByALine[tempit].BeginY))
+									ifbreak = 1;
+							}
+							if(ifbreak == 1)
+								break;
+							printf("Erase (%d,%d)\n",(*vecIt).x,(*vecIt).y);
+							vecIt=contours[i].erase(vecIt);
+						}
+
+
+					}
+					printf("Erase OK\n");
+					for(int it=0;it<repairedByALine.size();it++){
+
+						vector<cv::Point>::iterator vecIt = contours[i].begin();
+						const int spacingX = repairedByALine[it].EndX-repairedByALine[it].BeginX;
+						const int spacingY = repairedByALine[it].EndY-repairedByALine[it].BeginY;
+						if((spacingX >0)&&spacingY>0){
+							for(;((*vecIt).x == repairedByALine[it].BeginX)&&((*vecIt).y == repairedByALine[it].BeginY);vecIt++);
+							vecIt++;
+							for(int p =0;p<spacingX;p++){
+								cv::Point linePoint;
+								linePoint.x = repairedByALine[it].BeginX+p; 
+								linePoint.y = repairedByALine[it].BeginY+spacingY/spacingX*p;
+								vecIt = contours[i].insert(vecIt,linePoint);
 							}
 						}
-						}
-			}
-		}
-				printf( "i:%d distance rep calc OK\n",i);
 
 
-//				free(disPixel);
-//				free(disClockWise);
-//				free(disCounterPixel);
-//				free(disCounterClockWise);
-				
-	}
-	printf("%d Detecting is OK, enter repair...\n",tempInCounter-1);
-
-
-
-	for(int it=0;it<repairedByALine.size();it++){
-		printf("repairInfo: it:%d, BeginX:%d, BeginY:%d, EndX:%d, EndY:%d\n",it,repairedByALine[it].BeginX,repairedByALine[it].BeginY,repairedByALine[it].EndX,repairedByALine[it].EndY);
-		if(repairedByALine[it].clockwise == 1){
-			vector<cv::Point>::iterator vecIt = contours[i].begin();
-			for(;((*vecIt).x == repairedByALine[it].BeginX)&&((*vecIt).y == repairedByALine[it].BeginY);vecIt++);
-			printf("Found! --");
-			for(;((*vecIt).x!=repairedByALine[it].EndX)&&((*vecIt).y!=repairedByALine[it].EndY);){
-				int ifbreak = 0;
-				for(int tempit=0;tempit<repairedByALine.size();tempit++){
-					if(((*vecIt).x ==repairedByALine[tempit].BeginX)&&((*vecIt).x==repairedByALine[tempit].BeginY))
-						ifbreak = 1;
+					}
+					printf("Adding OK\n");
 				}
-				if(ifbreak == 1)
-					break;
-				printf("Erase (%d,%d)\n",(*vecIt).x,(*vecIt).y);
-				vecIt=contours[i].erase(vecIt);
 			}
-		}else{
+		}catch(...){
+			std::cerr << "Exception: Caught" << std::endl;
+			return EXIT_FAILURE;
 		}
 
-	}
-	printf("Erase OK\n");
-	for(int it=0;it<repairedByALine.size();it++){
-		if(repairedByALine[it].clockwise == 1){
-			vector<cv::Point>::iterator vecIt = contours[i].begin();
-			const int spacingX = repairedByALine[it].EndX-repairedByALine[it].BeginX;
-			const int spacingY = repairedByALine[it].EndY-repairedByALine[it].BeginY;
-			if((spacingX >0)&&spacingY>0){
-			for(;((*vecIt).x == repairedByALine[it].BeginX)&&((*vecIt).y == repairedByALine[it].BeginY);vecIt++);
-			vecIt++;
-			for(int p =0;p<spacingX;p++){
-						cv::Point linePoint;
-						linePoint.x = repairedByALine[it].BeginX+p; 
-						linePoint.y = repairedByALine[it].BeginY+spacingY/spacingX*p;
-						vecIt = contours[i].insert(vecIt,linePoint);
-			}
-			}
-		}else{
-		}
-
-	}
-	printf("Adding OK\n");
-}
-}catch(...){
-	std::cerr << "Exception: Caught" << std::endl;
-	return EXIT_FAILURE;
-	}
-
-		  /// Draw contours
+		/// Draw contours
 		Mat drawing = Mat::zeros( img.size(), CV_8UC3 );
 		for( int i = 0; i< contours.size(); i++ )
 		{
-			 Scalar color = Scalar( rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255) );
+			Scalar color = Scalar( rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255) );
 			drawContours( drawing, contours, i, color, 2, 8, hierarchy, 0, Point() );
 		}
 
 		ImageType2D::Pointer itkDrawing;
 		try{
-		itkDrawing=itk::OpenCVImageBridge::CVMatToITKImage<ImageType2D>(drawing);
+			itkDrawing=itk::OpenCVImageBridge::CVMatToITKImage<ImageType2D>(drawing);
 		} catch (itk::ExceptionObject &excp){
 			std::cerr << "Exception: CVtoITKImage failure !" << std::endl;
 			std::cerr << excp << std::endl;
@@ -378,9 +371,9 @@ int main( int argc, char* argv[] ){
 		}
 		printf(" %d ITK Drawing is OK\n",inIterator.GetIndex());
 		joinSeries->PushBackInput(itkDrawing );
-}
+	}
 
-  
+
 
 	try{
 		joinSeries->Update();
