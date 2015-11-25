@@ -11,7 +11,9 @@ project(GDCMImageWeightedKmeansFilter)
 # Find ITK.
 find_package(ITK REQUIRED)
 include(${ITK_USE_FILE})
+find_package( OpenCV REQUIRED )
+include_directories( ${OpenCV_INCLUDE_DIRS} )
 
 add_executable(GDCMImageWeightedKmeansFilter GDCMImageWeightedKmeansFilter.cxx )
 
-target_link_libraries(GDCMImageWeightedKmeansFilter ${ITK_LIBRARIES})
+target_link_libraries(GDCMImageWeightedKmeansFilter ${ITK_LIBRARIES} ${OpenCV_LIBS})

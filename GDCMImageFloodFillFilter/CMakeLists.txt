@@ -11,7 +11,9 @@ project(GDCMImageFloodFillFilter)
 # Find ITK.
 find_package(ITK REQUIRED)
 include(${ITK_USE_FILE})
+find_package( OpenCV REQUIRED )
+include_directories( ${OpenCV_INCLUDE_DIRS} )
 
 add_executable(GDCMImageFloodFillFilter GDCMImageFloodFillFilter.cxx )
 
-target_link_libraries(GDCMImageFloodFillFilter ${ITK_LIBRARIES})
+target_link_libraries(GDCMImageFloodFillFilter ${ITK_LIBRARIES} ${OpenCV_LIBS})

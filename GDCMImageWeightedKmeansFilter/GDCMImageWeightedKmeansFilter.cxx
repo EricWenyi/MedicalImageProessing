@@ -99,7 +99,7 @@ int main( int argc, char * argv[] ){
 	double R;
 	int indexBetweenUpperAndMiddle = atoi( argv[4] );
 	int indexBetweenMiddleAndLower = atoi( argv[5] );
-
+ 
 	for( medianIterator.GoToBegin(), originIterator.GoToBegin(); !medianIterator.IsAtEnd(); medianIterator.NextSlice(), originIterator.NextSlice() ){
 		//ªÒ»°«–∆¨–Ú∫≈
 		ImageType3D::IndexType medianSliceIndex = medianIterator.GetIndex();

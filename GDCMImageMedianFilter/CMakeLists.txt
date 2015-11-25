@@ -11,7 +11,9 @@ project(GDCMImageMedianFilter)
 # Find ITK.
 find_package(ITK REQUIRED)
 include(${ITK_USE_FILE})
+find_package( OpenCV REQUIRED )
+include_directories( ${OpenCV_INCLUDE_DIRS} )
 
 add_executable(GDCMImageMedianFilter GDCMImageMedianFilter.cxx )
 
-target_link_libraries(GDCMImageMedianFilter ${ITK_LIBRARIES})
+target_link_libraries(GDCMImageMedianFilter ${ITK_LIBRARIES} ${OpenCV_LIBS})

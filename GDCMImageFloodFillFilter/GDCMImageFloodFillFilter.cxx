@@ -16,7 +16,7 @@
 #include "itkJoinseriesImageFilter.h"
 
 //填坑的头文件
-#include "itkVotingBinaryHoleFillingImageFilter.h"
+#include "itkVotingBinaryIterativeHoleFillingImageFilter.h"
 
 int main( int argc, char * argv[] ){
 
@@ -71,6 +71,7 @@ int main( int argc, char * argv[] ){
 	for( iterator.GoToBegin(); !iterator.IsAtEnd(); iterator.NextSlice() ){
 		//获取切片序号
 		ImageType3D::IndexType sliceIndex = iterator.GetIndex();
+		std::cout<<sliceIndex[2]+1<<std::endl;
 
 		//获取每张切片的大小，并设置每张切片的Z轴为0
 		typedef itk::ExtractImageFilter< ImageType3D, ImageType2D > ExtractFilterType;
@@ -101,12 +102,17 @@ int main( int argc, char * argv[] ){
 		}
 
 		//设定填坑过滤器的前景，背景点
-		typedef itk::VotingBinaryHoleFillingImageFilter< ImageType2D, ImageType2D > BinaryHoleFillingImageFilter;
-		BinaryHoleFillingImageFilter::Pointer holeFillingImageFilter = BinaryHoleFillingImageFilter::New();
+		typedef itk::VotingBinaryIterativeHoleFillingImageFilter< ImageType2D > BinaryIterativeHoleFillingImageFilter;
+		BinaryIterativeHoleFillingImageFilter::Pointer holeFillingImageFilter = BinaryIterativeHoleFillingImageFilter::New();
+		ImageType2D::SizeType indexRadius;
+		indexRadius.Fill( 2 );//默认半径全为1，设置为大于3时会丢失边缘特征
+		holeFillingImageFilter->SetRadius( indexRadius );
 		holeFillingImageFilter->SetBackgroundValue( 0 );
 		holeFillingImageFilter->SetForegroundValue( 1 );
+		holeFillingImageFilter->SetMajorityThreshold( 1 );//默认阈值为1,经测试，设置其他的会丢失边缘特征，变得方块化
+		holeFillingImageFilter->SetMaximumNumberOfIterations( 20 );//默认是10
 		holeFillingImageFilter->SetInput( extractFilter->GetOutput() );
-		
+
 		//更新填坑过滤器，并捕获异常
 		try{
 			holeFillingImageFilter->Update();
