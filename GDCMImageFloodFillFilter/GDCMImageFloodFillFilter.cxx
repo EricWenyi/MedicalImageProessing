@@ -105,12 +105,12 @@ int main( int argc, char * argv[] ){
 		typedef itk::VotingBinaryIterativeHoleFillingImageFilter< ImageType2D > BinaryIterativeHoleFillingImageFilter;
 		BinaryIterativeHoleFillingImageFilter::Pointer holeFillingImageFilter = BinaryIterativeHoleFillingImageFilter::New();
 		ImageType2D::SizeType indexRadius;
-		indexRadius.Fill( 2 );//默认半径全为1，设置为大于3时会丢失边缘特征
+		indexRadius.Fill( 1 );//默认半径全为1，设置为大于3时会丢失边缘特征
 		holeFillingImageFilter->SetRadius( indexRadius );
 		holeFillingImageFilter->SetBackgroundValue( 0 );
 		holeFillingImageFilter->SetForegroundValue( 1 );
 		holeFillingImageFilter->SetMajorityThreshold( 1 );//默认阈值为1,经测试，设置其他的会丢失边缘特征，变得方块化
-		holeFillingImageFilter->SetMaximumNumberOfIterations( 20 );//默认是10
+		holeFillingImageFilter->SetMaximumNumberOfIterations( 10 );//默认是10
 		holeFillingImageFilter->SetInput( extractFilter->GetOutput() );
 
 		//更新填坑过滤器，并捕获异常
