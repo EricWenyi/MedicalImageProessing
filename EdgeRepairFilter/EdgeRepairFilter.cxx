@@ -278,6 +278,12 @@ int main( int argc, char* argv[] ){
 
 								if(disPixel[j][k]/disOfjk>1.5){ 
 									//Re
+									int isProblemLine = 0;
+									for(int q=0;q<repairedByALine.size();q++){
+										if(k>repairedByALine[q].BeginN)
+											//check position
+
+									}
 									ALine aline;
 									aline.contour=i;
 									aline.BeginN=j;
