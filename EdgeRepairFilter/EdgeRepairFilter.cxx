@@ -280,8 +280,24 @@ int main( int argc, char* argv[] ){
 									//Re
 									int isProblemLine = 0;
 									for(int q=0;q<repairedByALine.size();q++){
-										if(k>repairedByALine[q].BeginN)
+										if(k>repairedByALine[q].BeginN){
 											//check position
+											if(j<repairedByALine[q].BeginN&&repairedByALine[q].EndN>k){
+												//situation1
+												
+											}
+											if(j<repairedByALine[q].BeginN&&repairedByALine[q].EndN<k){
+												//situation2
+											}
+											if(repairedByALine[q].BeginN<j&&repairedByALine[q].EndN>k){
+												//situation3
+											}
+											if(repairedByALine[q].BeginN<j&&repairedByALine[q].EndN<k){
+												//situation4
+											}
+										}
+											
+
 
 									}
 									ALine aline;
