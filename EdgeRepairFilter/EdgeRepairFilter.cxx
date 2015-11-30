@@ -284,22 +284,40 @@ int main( int argc, char* argv[] ){
 											//check position
 											if(j<repairedByALine[q].BeginN&&repairedByALine[q].EndN>k){
 												//situation1
+												repairedByALine[q].BeginN=j;
+												repairedByALine[q].BeginX=contours[i][j].x;
+												repairedByALine[q].BeginY=contours[i][j].y;
+												isProblemLine =1;
 												
 											}
 											if(j<repairedByALine[q].BeginN&&repairedByALine[q].EndN<k){
 												//situation2
+												repairedByALine[q].BeginN=j;
+												repairedByALine[q].BeginX=contours[i][j].x;
+												repairedByALine[q].BeginY=contours[i][j].y;
+												repairedByALine[q].EndN=k;
+												repairedByALine[q].EndX=contours[i][k].x;
+												repairedByAline[q].EndY=contours[i][k].y;
+												isProblemLine =1;
 											}
 											if(repairedByALine[q].BeginN<j&&repairedByALine[q].EndN>k){
 												//situation3
+												//Nothing to do
+												isProblemLine =1;
 											}
 											if(repairedByALine[q].BeginN<j&&repairedByALine[q].EndN<k){
 												//situation4
+												repairedByALine[q].EndN=k;
+												repairedByALine[q].EndX=contours[i][k].x;
+												repairedByAline[q].EndY=contours[i][k].y;
+												isProblemLine =1;
 											}
 										}
 											
 
 
 									}
+									if(isProblemLine==1)continue;
 									ALine aline;
 									aline.contour=i;
 									aline.BeginN=j;

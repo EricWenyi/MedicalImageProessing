@@ -6,6 +6,15 @@
 	[()]
 	[(])
 
+struct ALine{
+			int contour;
+			int BeginN;
+			int BeginX;
+			int BeginY;
+			int EndN;
+			int EndX;
+			int EndY;
+		};
 
 3.所有的counterpixel，都代换成pixel。ds
 
