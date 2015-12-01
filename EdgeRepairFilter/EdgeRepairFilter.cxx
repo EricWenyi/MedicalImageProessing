@@ -297,7 +297,7 @@ int main( int argc, char* argv[] ){
 												repairedByALine[q].BeginY=contours[i][j].y;
 												repairedByALine[q].EndN=k;
 												repairedByALine[q].EndX=contours[i][k].x;
-												repairedByAline[q].EndY=contours[i][k].y;
+												repairedByALine[q].EndY=contours[i][k].y;
 												isProblemLine =1;
 											}
 											if(repairedByALine[q].BeginN<j&&repairedByALine[q].EndN>k){
@@ -309,7 +309,7 @@ int main( int argc, char* argv[] ){
 												//situation4
 												repairedByALine[q].EndN=k;
 												repairedByALine[q].EndX=contours[i][k].x;
-												repairedByAline[q].EndY=contours[i][k].y;
+												repairedByALine[q].EndY=contours[i][k].y;
 												isProblemLine =1;
 											}
 										}
@@ -347,15 +347,15 @@ int main( int argc, char* argv[] ){
 
 
 					for(int it=0;it<repairedByALine.size();it++){
-						printf("repairInfo: it:%d, BeginX:%d, BeginY:%d, EndX:%d, EndY:%d\n",it,repairedByALine[it].BeginX,repairedByALine[it].BeginY,repairedByALine[it].EndX,repairedByALine[it].EndY);
+						printf("repairInfo: it:%d, BeginX:%d, BeginY:%d, EndX:%d, EndY:%d",it,repairedByALine[it].BeginX,repairedByALine[it].BeginY,repairedByALine[it].EndX,repairedByALine[it].EndY);
 
 						vector<cv::Point>::iterator vecIt = contours[i].begin();
 						for(;((*vecIt).x == repairedByALine[it].BeginX)&&((*vecIt).y == repairedByALine[it].BeginY);vecIt++);
-						printf("Found! --");
+						printf("Found!\n");
 						for(;((*vecIt).x!=repairedByALine[it].EndX)&&((*vecIt).y!=repairedByALine[it].EndY);){
 							int ifbreak = 0;
-							for(int tempit=0;tempit<repairedByALine.size();tempit++){
-								if(((*vecIt).x ==repairedByALine[tempit].BeginX)&&((*vecIt).x==repairedByALine[tempit].BeginY))
+							
+								if(((*vecIt).x ==repairedByALine[it].EndX)&&((*vecIt).x==repairedByALine[it].EndY)){
 									ifbreak = 1;
 							}
 							if(ifbreak == 1)
