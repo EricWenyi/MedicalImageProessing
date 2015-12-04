@@ -97,6 +97,7 @@ int main( int argc, char* argv[] ){
 			return EXIT_FAILURE;
 		}
 
+		//引入Opencv
 		using namespace cv;
 		Mat img = itk::OpenCVImageBridge::ITKImageToCVMat< ImageType2D >( inExtractor->GetOutput() );
 		vector<vector<Point>> contours;
@@ -121,7 +122,7 @@ int main( int argc, char* argv[] ){
 			int EndN;
 			int EndX;
 			int EndY;
-		};
+		};//结构，用于记录待删除线段的两个端点信息
 
 		try{
 			for (int i = 0; i< contours.size(); i++)
@@ -149,8 +150,8 @@ int main( int argc, char* argv[] ){
 
 
 
-					disClockWise = (float *)malloc(sizeof(float)*contours[i].size()*contours[i].size());
-					disPixel =  (float **)malloc(sizeof(float)*contours[i].size());
+					disClockWise = (float *)malloc(sizeof(float)*contours[i].size()*contours[i].size());//逆时针方向，两个像素之间的距离
+					disPixel =  (float **)malloc(sizeof(float)*contours[i].size());//顺时针方向，两个像素之间的距离
 					for(int a =0; a< contours[i].size();a++)
 					{
 						disPixel[a] = &disClockWise[a * contours[i].size()];
@@ -180,14 +181,14 @@ int main( int argc, char* argv[] ){
 					//				free(subpower);
 					//				free(power);
 
-
+					//遍历轮廓里所有的节点对。计算节点对之间的距离
 					try{
 						for(int j = 0; j<contours[i].size();j++){
 							for(int k=0; k<contours[i].size();k++){
-								if(j < k){
+								if(j < k){//限制第一个节点的序号小于第二个节点的序号，即规定节点对的向量方向。避免重复计算
 									for(int m = j; m<k ;m++){
 										try{
-											if((contours[i][m+1].x != contours[i][m].x)&&(contours[i][m+1].y!=contours[i][m].y)){ ////Wrong &&
+											if((contours[i][m+1].x != contours[i][m].x)&&(contours[i][m+1].y!=contours[i][m].y)){ 
 												disPixel[j][k]+=1.4142135f; 
 											}else{
 												disPixel[j][k]+=1.0f;
@@ -228,7 +229,7 @@ int main( int argc, char* argv[] ){
 											disCounterPixel[j][k]+=1.0f;
 										}
 									}
-								}else if(j > k){
+								}else if(j > k){//对称的
 									try{
 										for(int m = j;m<contours[i].size();m++){
 											disPixel[j][k] = disCounterPixel[k][j]; 
@@ -272,7 +273,7 @@ int main( int argc, char* argv[] ){
 							
 							
 							
-							
+							//取两个中小的那个
 							if(disPixel[j][k]<disCounterPixel[j][k]){
 								float disOfjk = (float)sqrt((double)((contours[i][j].x - contours[i][k].x)*(contours[i][j].x - contours[i][k].x)+(contours[i][j].y - contours[i][k].y)*(contours[i][j].y - contours[i][k].y)));
 
@@ -345,7 +346,7 @@ int main( int argc, char* argv[] ){
 					printf("%d Detecting is OK, enter repair...\n",tempInCounter-1);
 
 
-
+					//替换
 					for(int it=0;it<repairedByALine.size();it++){
 						printf("repairInfo: it:%d, BeginX:%d, BeginY:%d, EndX:%d, EndY:%d",it,repairedByALine[it].BeginX,repairedByALine[it].BeginY,repairedByALine[it].EndX,repairedByALine[it].EndY);
 
