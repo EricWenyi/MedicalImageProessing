@@ -1,0 +1,3 @@
+用4*4*4的DECOM文件做了测试。测试结果与用同样数据作为输入的weightedkmeans的结果一致。
+但是要注意： testkmeans.cpp中 vector的结构为（原图像灰度，中值滤波灰度），
+				而weightedkmeans.cxx中vector的结构为（中值滤波灰度，原图像灰度）所以结果要反过来对比
