@@ -25,3 +25,6 @@ http://www.itk.org/pipermail/insight-users/2008-December/028320.html
 https://cmake.org/pipermail/insight-users/2007-January/020532.html
 
 http://www.itk.org/Doxygen/html/classitk_1_1ImageMomentsCalculator.html
+
+1.a 可以通过协方差矩阵进行主轴和次轴的计算。
+1.b boundingbox OPENCV有相关实现
