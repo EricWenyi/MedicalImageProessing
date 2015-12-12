@@ -9,7 +9,7 @@ E部分可以分为以下几个sections：
 从2D连接为3D：26邻接。如果一个像素的26个邻接像素上有点与另一个像素的3x3x3的邻接像素有重叠，那么他们可以连在一起。
 -- 
 2.3D特征下的Reduction
- a.cube的三维必须大于3x3x3
+ a.slice上的boundingbox必须大于3x3x3
  b.circularity(Roundness;Roundness is the measure of how closely the shape of an object approaches that of a circle.)
  c.删除位于CentralRegion的，最长维度的长度小于3mm的结节
 
@@ -28,3 +28,8 @@ http://www.itk.org/Doxygen/html/classitk_1_1ImageMomentsCalculator.html
 
 1.a 可以通过协方差矩阵进行主轴和次轴的计算。
 1.b boundingbox OPENCV有相关实现
+	Creating Bounding boxes and circles for contours
+http://docs.opencv.org/2.4/doc/tutorials/imgproc/shapedescriptors/bounding_rects_circles/bounding_rects_circles.html
+
+2.circularity Opencv有实现
+	b.http://www.learnopencv.com/blob-detection-using-opencv-python-c/
