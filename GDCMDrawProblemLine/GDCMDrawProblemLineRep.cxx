@@ -211,6 +211,9 @@ int main( int argc, char* argv[] ){
 
 		//TODO replace
 
+		
+	
+
 		// Draw contours
 		printf( "drawing\n" );
 		Mat drawing = Mat::zeros( img.size(), CV_8UC1 );
