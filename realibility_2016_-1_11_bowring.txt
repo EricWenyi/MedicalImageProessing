@@ -1,0 +1,6 @@
+ThresholdImageFilter 使用阈值方法过滤空气像素。方法可靠。
+WeightedKmeans 使用加权的Kmeans进行前景背景分离，方法可靠。
+EdgePreservingFilter 使用ITK提供方法，方法可靠
+EdgeRepairFilter 使用自行设计的方法，可靠性需要验证。理论上可靠。
+Rule-basedFPReduction 使用自行设计的方法，可靠性需要验证.可靠性未知。
+
