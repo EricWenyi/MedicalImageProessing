@@ -110,7 +110,7 @@ int main( int argc, char* argv[] ){
 		binaryErode->SetErodeValue( 0 );
 		
 		binaryDilate->SetInput( extractor->GetOutput() );
-		binaryErode->SetInput( binaryErode->GetOutput() );
+		binaryErode->SetInput( binaryDilate->GetOutput() );
 
 		try{
 			binaryDilate->Update();
@@ -127,8 +127,8 @@ int main( int argc, char* argv[] ){
 			std::cerr << excp << std::endl;
 			return EXIT_FAILURE;
 		}
-
-		joinSeries->PushBackInput( binaryDilate->GetOutput() );
+		
+		joinSeries->PushBackInput( binaryErode->GetOutput() );
 	}
 
 	try{
