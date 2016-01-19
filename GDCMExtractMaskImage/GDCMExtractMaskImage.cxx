@@ -82,21 +82,26 @@ int main( int argc, char* argv[] ){
 		RNG rng( 12345 );
 		findContours( img, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_NONE, Point(0, 0) );
 
+		//初始化distance
 		float *distance = (float *)calloc( contours.size(), sizeof(float) );
 		for (int i = 0; i < contours.size(); i++){
 			distance[i] = 0.0f;
 		}
 
 		Scalar color = Scalar( rng.uniform( 0, 255 ) );
-		int temp = 0;
+		int index = 0;
 
-		for(int l = img.cols/3; l < img.cols/2; l++){
-			if(img.at<uchar>( img.rows/3, l ) == 0){
+		//开始算法，这是适用于测试图的代码，对于原图，系数等还需调整，这里y轴固定，x轴起点分别为1/3 cols，2/3 cols
+		for(int x = img.cols/3; x < img.cols/2; x++){
+			//如果像素值为0（即背景点），则跳过
+			if(img.at<uchar>( img.rows/3, x ) == 0){
 				continue;
 			} else {
+				//遍历contours，寻找该非0像素点所在的contours的序号
 				for (int i = 0; i < contours.size(); i++){
 					for(int j = 0; j < contours[i].size() - 1; j++){
-						if(contours[i][j].x == l && contours[i][j].y == img.rows/3){
+						//如果坐标相同，则计算所在的contours的周长，并记录序号index
+						if(contours[i][j].x == x && contours[i][j].y == img.rows/3){
 							for(int k = 0; k < contours[i].size() - 1; k++){
 								if((contours[i][k+1].x != contours[i][k].x) && (contours[i][k+1].y != contours[i][k].y)){ 
 									distance[i] += 1.4142135f;
@@ -104,72 +109,31 @@ int main( int argc, char* argv[] ){
 									distance[i] += 1.0f;
 								}
 							}
-							temp = i;
+							index = i;
 						}
 					}
 				}
 			}
-			if( distance[temp] > 600.0f ){
+			//若该contours周长大于600（适用于本测试图，原图的话需要分区设定不同的值），则退出大循环，开始画轮廓
+			if( distance[index] > 600.0f ){
 				break;
 			}
 		}
-		/*
-		for (int i = 0; i < contours.size(); i++){
-			for(int j = 0; j < contours[i].size() - 1; j++){
-				if((contours[i][j+1].x != contours[i][j].x) && (contours[i][j+1].y != contours[i][j].y)){ 
-					distance[i] += 1.4142135f;
-				} else {
-					distance[i] += 1.0f;
-				}
-			}
-		}		
 
-		float minimum = INT_MAX;
-		int temp = 0;
-
-		for(int i = 0; i < contours.size(); i++){
-			printf("%f\n", distance[i]);
-			if( distance[i] > 650.0f && distance[i] < 700.0f ){
-				if( distance[i] < minimum ){
-					minimum = distance[i];
-					temp = i;
-				}
-			} else {
-				continue;
-			}
-		}
-		*/
 		printf( "drawing\n" );
 		Mat drawing = Mat::zeros( img.size(), CV_8UC1 );
-
-		/*
-		for( int i = 0; i < contours.size(); i++ ){
-			Scalar color = Scalar( rng.uniform( 0, 255 ) );
-			drawContours( drawing, contours, i, color, 1, 8, hierarchy, 0, Point(0, 0) );
-		}
-		*/
 		
-		drawContours( drawing, contours, temp, color, 1, 8, hierarchy, 0, Point(0, 0) );
+		//根据上面找到的序号画出左侧轮廓（此处也可用at方法画，at比较灵活，可以精确到像素点，想画几个画几个，像素值也可随意设定（不同点设置不同像素），而drawContours，只能送进去一个vector把整个vector用同一颜色画出来。。）
+		drawContours( drawing, contours, index, color, 1, 8, hierarchy, 0, Point(0, 0) );
 
-		/*
-		for( int i = 0; i < contours.size(); i++ ){
-			for( int j = 0; j < contours[i].size(); j++ ){
-				drawing.at<uchar>( contours[i][j].y, contours[i][j].x ) = 255;
-			}
-		}
-		
-		for( int j = 0; j < contours[temp].size(); j++ ){
-			drawing.at<uchar>( contours[temp][j].y, contours[temp][j].x ) = 255;
-		}
-		*/
-
-		for(int l = 2*img.cols/3; l < img.cols; l++){
-			if(img.at<uchar>( img.rows/3, l ) == 0){
+		//下文为画右边轮廓，原理同上
+		for(int x = 2*img.cols/3; x < img.cols; x++){
+			if(img.at<uchar>( img.rows/3, x ) == 0){
 				continue;
 			} else {
 				for (int i = 0; i < contours.size(); i++){
 					for(int j = 0; j < contours[i].size() - 1; j++){
-						if(contours[i][j].x == l && contours[i][j].y == img.rows/3){
+						if(contours[i][j].x == x && contours[i][j].y == img.rows/3){
 							for(int k = 0; k < contours[i].size() - 1; k++){
 								if((contours[i][k+1].x != contours[i][k].x) && (contours[i][k+1].y != contours[i][k].y)){ 
 									distance[i] += 1.4142135f;
@@ -177,17 +141,17 @@ int main( int argc, char* argv[] ){
 									distance[i] += 1.0f;
 								}
 							}
-							temp = i;
+							index = i;
 						}
 					}
 				}
 			}
-			if( distance[temp] > 600.0f ){
+			if( distance[index] > 600.0f ){
 				break;
 			}
 		}
 
-		drawContours( drawing, contours, temp, color, 1, 8, hierarchy, 0, Point(0, 0) );
+		drawContours( drawing, contours, index, color, 1, 8, hierarchy, 0, Point(0, 0) );
 
 		ImageType2D::Pointer itkDrawing;
 		try{
