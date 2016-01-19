@@ -33,3 +33,19 @@ int findNewContourBegin(Vector<APoint> repairedByStatus,int i){
 	return i;
 }
 
+int delAndDrawLine(repairedByStatus,int i,int statusBegin,int statusEnd){
+	int currentNode=0;
+	while((contour[i][currentNode].x!=repairedByStatus[statusBegin].x)&&(contour[i][currentNode].y!=repairedByStatus.[statusBegin].y))
+		currentNode++;
+
+	while((contour[i][currentNode].x!=repairedByStatus[statusEnd].x)&&(contour[i][currentNode].y!=repairedByStatus[statusEnd]))
+		NodeDelete();//TODO
+	int Rx=repairedByStatus[statusEnd].x-repairedByStatus[statusBegin].x;
+	int Ry=repairedByStatus[statusEnd].y-repairedByStatus[statusBegin].y;
+	//TODO assert the node of statusEnd is known, then we have four possible related possition cases.
+	for(int x=0;x<Rx;x++){
+		//first one , normal one.
+		int y=Ry/Rx * x;
+		AddNewNode();//TODO
+	}
+}
