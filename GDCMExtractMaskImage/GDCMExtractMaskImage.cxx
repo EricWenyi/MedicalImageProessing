@@ -80,15 +80,42 @@ int main( int argc, char* argv[] ){
 		vector<vector<Point>> contours;
 		vector<Vec4i> hierarchy;
 		RNG rng( 12345 );
-		findContours( img, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0) );
+		findContours( img, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_NONE, Point(0, 0) );
 
 		float *distance = (float *)calloc( contours.size(), sizeof(float) );
 		for (int i = 0; i < contours.size(); i++){
 			distance[i] = 0.0f;
 		}
 
+		Scalar color = Scalar( rng.uniform( 0, 255 ) );
+		int temp = 0;
+
+		for(int l = img.cols/3; l < img.cols/2; l++){
+			if(img.at<uchar>( img.rows/3, l ) == 0){
+				continue;
+			} else {
+				for (int i = 0; i < contours.size(); i++){
+					for(int j = 0; j < contours[i].size() - 1; j++){
+						if(contours[i][j].x == l && contours[i][j].y == img.rows/3){
+							for(int k = 0; k < contours[i].size() - 1; k++){
+								if((contours[i][k+1].x != contours[i][k].x) && (contours[i][k+1].y != contours[i][k].y)){ 
+									distance[i] += 1.4142135f;
+								} else {
+									distance[i] += 1.0f;
+								}
+							}
+							temp = i;
+						}
+					}
+				}
+			}
+			if( distance[temp] > 600.0f ){
+				break;
+			}
+		}
+		/*
 		for (int i = 0; i < contours.size(); i++){
-			for(int j = 0; j < contours[i].size() - 1; j++){//切记 -1 ，因为当前j要与下一个比较，所以不 -1 会out of range
+			for(int j = 0; j < contours[i].size() - 1; j++){
 				if((contours[i][j+1].x != contours[i][j].x) && (contours[i][j+1].y != contours[i][j].y)){ 
 					distance[i] += 1.4142135f;
 				} else {
@@ -102,7 +129,7 @@ int main( int argc, char* argv[] ){
 
 		for(int i = 0; i < contours.size(); i++){
 			printf("%f\n", distance[i]);
-			if( distance[i] > 320.0f && distance[i] < 360.0f ){
+			if( distance[i] > 650.0f && distance[i] < 700.0f ){
 				if( distance[i] < minimum ){
 					minimum = distance[i];
 					temp = i;
@@ -111,26 +138,56 @@ int main( int argc, char* argv[] ){
 				continue;
 			}
 		}
-
+		*/
 		printf( "drawing\n" );
 		Mat drawing = Mat::zeros( img.size(), CV_8UC1 );
 
 		/*
 		for( int i = 0; i < contours.size(); i++ ){
 			Scalar color = Scalar( rng.uniform( 0, 255 ) );
-			drawContours( drawing, contours, i, color, 2, 8, hierarchy, 0, Point() );
+			drawContours( drawing, contours, i, color, 1, 8, hierarchy, 0, Point(0, 0) );
 		}
+		*/
 		
+		drawContours( drawing, contours, temp, color, 1, 8, hierarchy, 0, Point(0, 0) );
+
+		/*
 		for( int i = 0; i < contours.size(); i++ ){
 			for( int j = 0; j < contours[i].size(); j++ ){
 				drawing.at<uchar>( contours[i][j].y, contours[i][j].x ) = 255;
 			}
 		}
-		*/
-
+		
 		for( int j = 0; j < contours[temp].size(); j++ ){
 			drawing.at<uchar>( contours[temp][j].y, contours[temp][j].x ) = 255;
 		}
+		*/
+
+		for(int l = 2*img.cols/3; l < img.cols; l++){
+			if(img.at<uchar>( img.rows/3, l ) == 0){
+				continue;
+			} else {
+				for (int i = 0; i < contours.size(); i++){
+					for(int j = 0; j < contours[i].size() - 1; j++){
+						if(contours[i][j].x == l && contours[i][j].y == img.rows/3){
+							for(int k = 0; k < contours[i].size() - 1; k++){
+								if((contours[i][k+1].x != contours[i][k].x) && (contours[i][k+1].y != contours[i][k].y)){ 
+									distance[i] += 1.4142135f;
+								} else {
+									distance[i] += 1.0f;
+								}
+							}
+							temp = i;
+						}
+					}
+				}
+			}
+			if( distance[temp] > 600.0f ){
+				break;
+			}
+		}
+
+		drawContours( drawing, contours, temp, color, 1, 8, hierarchy, 0, Point(0, 0) );
 
 		ImageType2D::Pointer itkDrawing;
 		try{
