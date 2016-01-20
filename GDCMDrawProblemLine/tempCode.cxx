@@ -39,13 +39,40 @@ int delAndDrawLine(repairedByStatus,int i,int statusBegin,int statusEnd){
 		currentNode++;
 
 	while((contour[i][currentNode].x!=repairedByStatus[statusEnd].x)&&(contour[i][currentNode].y!=repairedByStatus[statusEnd]))
-		NodeDelete();//TODO
+		NodeDelete();
 	int Rx=repairedByStatus[statusEnd].x-repairedByStatus[statusBegin].x;
 	int Ry=repairedByStatus[statusEnd].y-repairedByStatus[statusBegin].y;
 	//TODO assert the node of statusEnd is known, then we have four possible related possition cases.
-	for(int x=0;x<Rx;x++){
+	if(Rx>0&&Ry>0)
+	for(int x=1;x<=Rx;x++){
 		//first one , normal one.
 		int y=Ry/Rx * x;
-		AddNewNode();//TODO
+		AddNewNode();
 	}
+	if(Rx<0&&Ry>0)
+		for(int x=-1;x>=Rx;x--){
+		//first one , normal one.
+		int y=Ry/Rx * x;
+		AddNewNode();
+	}
+	if(Rx<0&&Ry<0)
+		for(int x=-1;x>=Rx;x--){
+		//first one , normal one.
+		int y=Ry/Rx * x;
+		AddNewNode();
+	}
+	if(Rx>0&&Ry<0)
+	for(int x=1;x<=Rx;x++){
+		//first one , normal one.
+		int y=Ry/Rx * x;
+		AddNewNode();
+	}
+}
+
+AddNewNode(int possition,int i,int x,int y){
+	contours[i].insert(contours[i].begin()+possition,newNode);
+}
+
+NodeDelete(int possition,int i,int x,int y){
+	contours[i].delete(contours[i].begin()+possition);
 }
