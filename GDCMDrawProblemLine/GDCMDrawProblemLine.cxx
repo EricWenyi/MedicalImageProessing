@@ -93,7 +93,7 @@ int main( int argc, char* argv[] ){
 		vector<vector<Point>> contours;
 		vector<Vec4i> hierarchy;
 		RNG rng( 12345 );
-		findContours( img, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0) );
+		findContours( img, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_NONE, Point(0, 0) );//注意参数，之前吃大亏了
 		
 		struct APoint{
 			int contour;
@@ -113,100 +113,87 @@ int main( int argc, char* argv[] ){
 				apoint.status = false;
 				repairedByStatus.push_back( apoint );
 			}
-			int isContinuing = 1;
-			for( int j = 0; j < contours[i].size() - 1; j++ ){
-				if( abs( contours[i][j+1].x - contours[i][j].x ) + abs( contours[i][j+1].y - contours[i][j].y ) > 2 ){
-					printf( "contours[%d] not continuing\n", i + 1 );
-					isContinuing = 0;
-					break;
+			printf( "Enter %d/%d of contours\n", i + 1, contours.size() );
+			float *disClockWise;
+			float **disPixel;
+			disClockWise = (float *)malloc( sizeof(float) * contours[i].size() * contours[i].size() );
+			disPixel = (float **)malloc( sizeof(float) * contours[i].size() );
+			for( int a = 0; a < contours[i].size(); a++ ){
+				disPixel[a] = &disClockWise[a * contours[i].size()];
+			}
+			float *disCounterClockWise;
+			float **disCounterPixel;
+			disCounterClockWise = (float *)malloc( sizeof(float) * contours[i].size() * contours[i].size() );
+			disCounterPixel = (float **)malloc( sizeof(float) * contours[i].size() );
+			for( int a = 0; a < contours[i].size(); a++ ){
+				disCounterPixel[a] = &disCounterClockWise[a * contours[i].size()];
+			}
+			for( int j = 0; j < contours[i].size(); j++ ){
+				for( int k = 0; k < contours[i].size(); k++ ){
+					disPixel[j][k] = 0;
+					disCounterPixel[j][k] = 0;
 				}
 			}
-			if( isContinuing == 0 ){
-				printf( "Skip contours[%d] \n", i + 1 );
-				continue;
-			}else{
-				printf( "Enter %d/%d of contours\n", i + 1, contours.size() );
-				float *disClockWise;
-				float **disPixel;
-				disClockWise = (float *)malloc( sizeof(float) * contours[i].size() * contours[i].size() );
-				disPixel = (float **)malloc( sizeof(float) * contours[i].size() );
-				for( int a = 0; a < contours[i].size(); a++ ){
-					disPixel[a] = &disClockWise[a * contours[i].size()];
-				}
-				float *disCounterClockWise;
-				float **disCounterPixel;
-				disCounterClockWise = (float *)malloc( sizeof(float) * contours[i].size() * contours[i].size() );
-				disCounterPixel = (float **)malloc( sizeof(float) * contours[i].size() );
-				for( int a = 0; a < contours[i].size(); a++ ){
-					disCounterPixel[a] = &disCounterClockWise[a * contours[i].size()];
-				}
-				for( int j = 0; j < contours[i].size(); j++ ){
-					for( int k = 0; k < contours[i].size(); k++ ){
-						disPixel[j][k] = 0;
-						disCounterPixel[j][k] = 0;
-					}
-				}
-				for( int j = 0; j < contours[i].size(); j++ ){
-					for( int k = 0; k < contours[i].size(); k++ ){
-						if( j < k ){
-							for( int m = j; m < k ; m++ ){
-								if( (contours[i][m+1].x != contours[i][m].x)&&(contours[i][m+1].y != contours[i][m].y) ){ 
-									disPixel[j][k] += 1.4142135f; 
-								}else{
-									disPixel[j][k] += 1.0f;
-								}
+			for( int j = 0; j < contours[i].size(); j++ ){
+				for( int k = 0; k < contours[i].size(); k++ ){
+					if( j < k ){
+						for( int m = j; m < k ; m++ ){
+							if( (contours[i][m+1].x != contours[i][m].x)&&(contours[i][m+1].y != contours[i][m].y) ){ 
+								disPixel[j][k] += 1.4142135f; 
+							}else{
+								disPixel[j][k] += 1.0f;
 							}
-							for( int m = 0; m < j; m++ ){
-								if( (contours[i][m+1].x != contours[i][m].x)&&(contours[i][m+1].y != contours[i][m].y) ){
-									disCounterPixel[j][k] += 1.4142135f;
-								}else{
-									disCounterPixel[j][k] += 1.0f;
-								}
-							}
-							for( int m = k; m < contours[i].size() - 1; m++ ){
-								if( (contours[i][m+1].x != contours[i][m].x)&&(contours[i][m+1].y != contours[i][m].y) ){
-									disCounterPixel[j][k] += 1.4142135f; 
-								}else{
-									disCounterPixel[j][k] += 1.0f;
-								}
-							}
-							if( (contours[i][contours[i].size()-1].x != contours[i][0].x)&&(contours[i][contours[i].size()-1].y != contours[i][0].y) ){
+						}
+						for( int m = 0; m < j; m++ ){
+							if( (contours[i][m+1].x != contours[i][m].x)&&(contours[i][m+1].y != contours[i][m].y) ){
 								disCounterPixel[j][k] += 1.4142135f;
 							}else{
 								disCounterPixel[j][k] += 1.0f;
 							}
-						}else if( j > k ){
-							for( int m = j; m < contours[i].size(); m++ ){
-								disPixel[j][k] = disCounterPixel[k][j]; 
-								disCounterPixel[j][k] = disPixel[k][j];
-							}
-						}else{
-							disPixel[j][k] = 0;
-							disCounterPixel[j][k] = 0;
 						}
+						for( int m = k; m < contours[i].size() - 1; m++ ){
+							if( (contours[i][m+1].x != contours[i][m].x)&&(contours[i][m+1].y != contours[i][m].y) ){
+								disCounterPixel[j][k] += 1.4142135f; 
+							}else{
+								disCounterPixel[j][k] += 1.0f;
+							}
+						}
+						if( (contours[i][contours[i].size()-1].x != contours[i][0].x)&&(contours[i][contours[i].size()-1].y != contours[i][0].y) ){
+							disCounterPixel[j][k] += 1.4142135f;
+						}else{
+							disCounterPixel[j][k] += 1.0f;
+						}
+					}else if( j > k ){
+						for( int m = j; m < contours[i].size(); m++ ){
+							disPixel[j][k] = disCounterPixel[k][j]; 
+							disCounterPixel[j][k] = disPixel[k][j];
+						}
+					}else{
+						disPixel[j][k] = 0;
+						disCounterPixel[j][k] = 0;
 					}
 				}
-				printf( "i:%d distance calc OK\n", i + 1 );
-				for( int j = 0; j < contours[i].size(); j++ ){
-					for( int k = 0; k < contours[i].size(); k++ ){ 
-						if( disPixel[j][k] < disCounterPixel[j][k] ){
-							float disOfjk = (float)sqrt( (double)((contours[i][j].x - contours[i][k].x) * (contours[i][j].x - contours[i][k].x) + (contours[i][j].y - contours[i][k].y) * (contours[i][j].y - contours[i][k].y)) );
-							if( disPixel[j][k] / disOfjk > 1.5 ){		
-								if( k > j ){
-									for( int p = j; p <= k; p++ ){
-										repairedByStatus[p].status = true;
-									}
-								}else{
-									for( int p = j; p <= k + contours[i].size(); p++ ){
-										repairedByStatus[p % contours[i].size()].status = true;
-									}
+			}
+			printf( "i:%d distance calc OK\n", i + 1 );
+			for( int j = 0; j < contours[i].size(); j++ ){
+				for( int k = 0; k < contours[i].size(); k++ ){ 
+					if( disPixel[j][k] < disCounterPixel[j][k] ){
+						float disOfjk = (float)sqrt( (double)((contours[i][j].x - contours[i][k].x) * (contours[i][j].x - contours[i][k].x) + (contours[i][j].y - contours[i][k].y) * (contours[i][j].y - contours[i][k].y)) );
+						if( disPixel[j][k] / disOfjk > 1.5 ){		
+							if( k > j ){
+								for( int p = j; p <= k; p++ ){
+									repairedByStatus[p].status = true;
+								}
+							}else{
+								for( int p = j; p <= k + contours[i].size(); p++ ){
+									repairedByStatus[p % contours[i].size()].status = true;
 								}
 							}
 						}
 					}
 				}
-				printf( "%d Detecting is OK, enter repair...\n", tempInCounter - 1 );
 			}
+			printf( "%d Detecting is OK, enter repair...\n", tempInCounter - 1 );
 		}
 
 		//TODO replace
@@ -214,12 +201,12 @@ int main( int argc, char* argv[] ){
 		// Draw contours
 		printf( "drawing\n" );
 		Mat drawing = Mat::zeros( img.size(), CV_8UC1 );
-		
+		/*
 		for( int i = 0; i < contours.size(); i++ ){
 			Scalar color = Scalar( rng.uniform( 0, 255 ) );
-			drawContours( drawing, contours, i, color, 2, 8, hierarchy, 0, Point() );
+			drawContours( drawing, contours, i, color, 1, 8, hierarchy, 0, Point(0, 0) );//注意参数，之前吃大亏了
 		}
-		
+		*/
 		for( int i = 0; i < repairedByStatus.size(); i++ ){
 			if( repairedByStatus[i].status ){
 				drawing.at<uchar>( repairedByStatus[i].y, repairedByStatus[i].x ) = 128;
