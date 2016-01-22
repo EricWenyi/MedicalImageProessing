@@ -1,3 +1,4 @@
+int repairContour(){
 statusBegin=findStatusBegin();
 if(statusBegin==-1){
 	int newContourBeginI=findNewContourBegin();
@@ -10,6 +11,7 @@ if(repairedByStatus[i].contour==currentContour){
 		repairContour(newContourBeginI);//new contour
 }else{
 	repairContour();//new contour
+}
 }
 
 int findStatusBegin(Vector<APoint> repairedByStatus,int i){
