@@ -26,7 +26,7 @@ if(statusBegin==-1){
 	int newContourBeginI=findNewContourBegin(repairedByStatus,i);
 	return repairContour(repairedByStatus,newContourBeginI);//new contour
 }
-	//TODO if end
+	//TODO:if end
 	statusEnd=findStatusEnd(repairedByStatus,i);
 	delAndDrawLine(repairedByStatus,repairedByStatus[i].contour,statusBegin,statusEnd);
 	int newContourBeginI=findNewContourBegin(repairedByStatus,i);
@@ -64,7 +64,7 @@ int delAndDrawLine(repairedByStatus,int i,int statusBegin,int statusEnd){
 		NodeDelete();
 	int Rx=repairedByStatus[statusEnd].x-repairedByStatus[statusBegin].x;
 	int Ry=repairedByStatus[statusEnd].y-repairedByStatus[statusBegin].y;
-	//TODO assert the node of statusEnd is known, then we have four possible related possition cases.
+	//assert the node of statusEnd is known, then we have four possible related possition cases.
 	if(Rx>0&&Ry>0)
 	for(int x=1;x<=Rx;x++){
 		//first one , normal one.
@@ -90,7 +90,7 @@ int delAndDrawLine(repairedByStatus,int i,int statusBegin,int statusEnd){
 		AddNewNode(statusBegin,i,x,y);
 	}
 }
-
+//TODO:vector structor
 AddNewNode(int possition,int i,int x,int y){
 	
 	contours[i].insert(contours[i].begin()+possition,newNode);
