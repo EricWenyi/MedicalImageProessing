@@ -121,7 +121,7 @@ int main( int argc, char* argv[] ){
 		vector<Vec4i> hierarchy;
 		RNG rng( 12345 );
 		findContours( img, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0) );
-		
+		printf("end of findcontours\n");
 		
 
 		//Vector<APoint> repairedByStatus;
@@ -230,9 +230,10 @@ int main( int argc, char* argv[] ){
 				printf( "%d Detecting is OK, enter repair...\n", tempInCounter - 1 );
 			}
 		}//end of for (int i = 0; i< contours.size(); i++)
-
+		printf("End of Detecting\n");
 		//TODO replace
 		repairContour(repairedByStatus,0);
+		printf("End of repairing\n");
 /*		
 int repairContour(Vector<APoint> &repairedByStatus,int i);
 
@@ -342,10 +343,10 @@ int findNewContourBegin(cv::Vector<APoint> &repairedByStatus,int i){
 
 void delAndDrawLine(cv::Vector<APoint> &repairedByStatus,int i,int statusBegin,int statusEnd){
 	int currentNode=0;
-	while((contours[i][currentNode].x!=repairedByStatus[statusBegin].x)&&(contours[i][currentNode].y!=repairedByStatus.[statusBegin].y)){
+	while((contours[i][currentNode].x!=repairedByStatus[statusBegin].x)&&(contours[i][currentNode].y!=repairedByStatus[statusBegin].y)){
 		currentNode++;
 	}
-	while((contours[i][currentNode].x!=repairedByStatus[statusEnd].x)&&(contours[i][currentNode].y!=repairedByStatus[statusEnd])){
+	while((contours[i][currentNode].x!=repairedByStatus[statusEnd].x)&&(contours[i][currentNode].y!=repairedByStatus[statusEnd].y)){
 		NodeDelete(currentNode,i);
 	}
 	int Rx=repairedByStatus[statusEnd].x-repairedByStatus[statusBegin].x;
