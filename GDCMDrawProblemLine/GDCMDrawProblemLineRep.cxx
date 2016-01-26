@@ -306,6 +306,7 @@ void NodeDelete(int possition,int i,int x,int y);
 
 int repairContour(cv::Vector<APoint> &repairedByStatus,int i){
 	int statusBegin=0;
+	
 	statusBegin=findStatusBegin(repairedByStatus,i);
 if(statusBegin==-1){
 	int newContourBeginI=findNewContourBegin(repairedByStatus,i);
@@ -323,6 +324,7 @@ if(statusBegin==-1){
 int findStatusBegin(cv::Vector<APoint> &repairedByStatus,int i){
 	int currentContour=repairedByStatus[i].contour;
 	while(repairedByStatus[i].contour==currentContour&&(!repairedByStatus[i].status))i++;
+	//Problem Line _1_
 	if(repairedByStatus[i].contour!=currentContour)
 		return -1;
 	else
