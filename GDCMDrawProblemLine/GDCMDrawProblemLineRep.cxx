@@ -311,6 +311,8 @@ int repairContour(cv::Vector<APoint> &repairedByStatus,int i){
 if(statusBegin==-1){
 	int newContourBeginI=findNewContourBegin(repairedByStatus,i);
 	return repairContour(repairedByStatus,newContourBeginI);//new contour
+}else if(statusBegin==-2){
+	return 0;
 }
 	//TODO:if end
 	int statusEnd=0;
@@ -323,10 +325,12 @@ if(statusBegin==-1){
 
 int findStatusBegin(cv::Vector<APoint> &repairedByStatus,int i){
 	int currentContour=repairedByStatus[i].contour;
-	while(repairedByStatus[i].contour==currentContour&&(!repairedByStatus[i].status))i++;
+	while(repairedByStatus[i].contour==currentContour&&(!repairedByStatus[i].status)&&i<repairedByStatus.size()-1)i++;
 	//Problem Line _1_
 	if(repairedByStatus[i].contour!=currentContour)
 		return -1;
+	else if(i==repairedByStatus.size()-1)
+		return -2;
 	else
 		return i;
 }
