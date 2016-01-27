@@ -120,7 +120,7 @@ int main( int argc, char* argv[] ){
 		//vector<vector<Point>> contours;
 		vector<Vec4i> hierarchy;
 		RNG rng( 12345 );
-		findContours( img, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0) );
+		findContours( img, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_NONE, Point(0, 0) );
 		printf("end of findcontours\n");
 		
 
@@ -253,21 +253,18 @@ void NodeDelete(int possition,int i,int x,int y);
 
 		// Draw contours
 		
+		
 		printf( "drawing\n" );
 		Mat drawing = Mat::zeros( img.size(), CV_8UC1 );
+		Scalar color = Scalar( rng.uniform( 0, 255 ) );
+		int index = 0;
+
 		
-		for( int i = 0; i < contours.size(); i++ ){
-			Scalar color = Scalar( rng.uniform( 0, 255 ) );
-			drawContours( drawing, contours, i, color, 2, 8, hierarchy, 0, Point() );
-		}
-		
-		for( int i = 0; i < repairedByStatus.size(); i++ ){
-			if( repairedByStatus[i].status ){
-				drawing.at<uchar>( repairedByStatus[i].y, repairedByStatus[i].x ) = 128;
-			} else {
-				drawing.at<uchar>( repairedByStatus[i].y, repairedByStatus[i].x ) = 255;
-			}
-		}
+
+		drawContours( drawing, contours, index, color, 1, 8, hierarchy, 0, Point(0, 0) );
+
+	
+
 		ImageType2D::Pointer itkDrawing;
 		try{
 			itkDrawing=itk::OpenCVImageBridge::CVMatToITKImage< ImageType2D >( drawing );
@@ -314,7 +311,6 @@ if(statusBegin==-1){
 }else if(statusBegin==-2){
 	return 0;
 }
-	//TODO:if end
 	int statusEnd=0;
 	statusEnd=findStatusEnd(repairedByStatus,i);
 	delAndDrawLine(repairedByStatus,repairedByStatus[i].contour,statusBegin,statusEnd);
@@ -349,6 +345,7 @@ int findNewContourBegin(cv::Vector<APoint> &repairedByStatus,int i){
 
 void delAndDrawLine(cv::Vector<APoint> &repairedByStatus,int i,int statusBegin,int statusEnd){
 	int currentNode=0;
+	//Problem Line
 	while((contours[i][currentNode].x!=repairedByStatus[statusBegin].x)&&(contours[i][currentNode].y!=repairedByStatus[statusBegin].y)){
 		currentNode++;
 	}
