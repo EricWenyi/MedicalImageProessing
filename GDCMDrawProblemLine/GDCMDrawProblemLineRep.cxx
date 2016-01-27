@@ -114,8 +114,17 @@ int main( int argc, char* argv[] ){
 			return EXIT_FAILURE;
 		}
 
+		
+
 		//引入Opencv
 		using namespace cv;
+		//refresh
+		cv::vector<cv::vector<cv::Point>> tempContours;
+		contours=tempContours;
+
+		cv::Vector<APoint> tempRepairedByStatus;
+		repairedByStatus=tempRepairedByStatus;
+
 		Mat img = itk::OpenCVImageBridge::ITKImageToCVMat< ImageType2D >( inExtractor->GetOutput() );
 		//vector<vector<Point>> contours;
 		vector<Vec4i> hierarchy;
@@ -256,12 +265,14 @@ void NodeDelete(int possition,int i,int x,int y);
 		
 		printf( "drawing\n" );
 		Mat drawing = Mat::zeros( img.size(), CV_8UC1 );
-		Scalar color = Scalar( rng.uniform( 0, 255 ) );
-		int index = 0;
+
 
 		
-
-		drawContours( drawing, contours, index, color, 1, 8, hierarchy, 0, Point(0, 0) );
+		for( int i = 0; i < contours.size(); i++ ){
+			Scalar color = Scalar( rng.uniform( 0, 255 ) );
+			drawContours( drawing, contours, i, color, 1, 8, hierarchy, 0, Point(0, 0) );//注意参数，之前吃大亏了
+		}
+		
 
 	
 
@@ -303,7 +314,7 @@ void NodeDelete(int possition,int i,int x,int y);
 
 int repairContour(cv::Vector<APoint> &repairedByStatus,int i){
 	int statusBegin=0;
-	
+	printf("Reparing %d/%d repairedByStatus",i,repairedByStatus.size());
 	statusBegin=findStatusBegin(repairedByStatus,i);
 if(statusBegin==-1){
 	int newContourBeginI=findNewContourBegin(repairedByStatus,i);
@@ -345,11 +356,11 @@ int findNewContourBegin(cv::Vector<APoint> &repairedByStatus,int i){
 
 void delAndDrawLine(cv::Vector<APoint> &repairedByStatus,int i,int statusBegin,int statusEnd){
 	int currentNode=0;
-	//Problem Line
-	while((contours[i][currentNode].x!=repairedByStatus[statusBegin].x)&&(contours[i][currentNode].y!=repairedByStatus[statusBegin].y)){
+
+	while((contours[i][currentNode].x!=repairedByStatus[statusBegin].x)||(contours[i][currentNode].y!=repairedByStatus[statusBegin].y)){
 		currentNode++;
 	}
-	while((contours[i][currentNode].x!=repairedByStatus[statusEnd].x)&&(contours[i][currentNode].y!=repairedByStatus[statusEnd].y)){
+	while((contours[i][currentNode].x!=repairedByStatus[statusEnd].x)||(contours[i][currentNode].y!=repairedByStatus[statusEnd].y)){
 		NodeDelete(currentNode,i);
 	}
 	int Rx=repairedByStatus[statusEnd].x-repairedByStatus[statusBegin].x;
@@ -360,18 +371,18 @@ void delAndDrawLine(cv::Vector<APoint> &repairedByStatus,int i,int statusBegin,i
 		//first one , normal one.
 		int y=Ry/Rx * x;
 		cv::Point aPoint;
-		aPoint.x=x;
+		aPoint.x=x+repairedByStatus[statusBegin].x;
 		aPoint.y=y;
-		AddNewNode(statusBegin,i,aPoint);
+		AddNewNode(currentNode,i,aPoint);
 	}
 	if(Rx<0&&Ry>0)
 		for(int x=-1;x>=Rx;x--){
 		//first one , normal one.
 		int y=Ry/Rx * x;
 				cv::Point aPoint;
-		aPoint.x=x;
+		aPoint.x=x+repairedByStatus[statusBegin].x;
 		aPoint.y=y;
-		AddNewNode(statusBegin,i,aPoint);
+		AddNewNode(currentNode,i,aPoint);
 
 	}
 	if(Rx<0&&Ry<0)
@@ -379,18 +390,18 @@ void delAndDrawLine(cv::Vector<APoint> &repairedByStatus,int i,int statusBegin,i
 		//first one , normal one.
 		int y=Ry/Rx * x;
 				cv::Point aPoint;
-		aPoint.x=x;
+		aPoint.x=x+repairedByStatus[statusBegin].x;
 		aPoint.y=y;
-		AddNewNode(statusBegin,i,aPoint);
+		AddNewNode(currentNode,i,aPoint);
 	}
 	if(Rx>0&&Ry<0)
 	for(int x=1;x<=Rx;x++){
 		//first one , normal one.
 		int y=Ry/Rx * x;
 				cv::Point aPoint;
-		aPoint.x=x;
+		aPoint.x=x+repairedByStatus[statusBegin].x;
 		aPoint.y=y;
-		AddNewNode(statusBegin,i,aPoint);
+		AddNewNode(currentNode,i,aPoint);
 	}
 }
 //TODO:vector structor
