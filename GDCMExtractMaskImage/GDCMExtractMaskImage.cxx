@@ -51,11 +51,33 @@ int main( int argc, char* argv[] ){
 	joinSeries->SetSpacing( originImage3D->GetSpacing()[2] );
 
 	int tempInCounter = 1;
+	double size = 100.0f;
+	double area = 1000.0f;
+
+	int startX1 = 200;
+	int startX2 = 300;
+	int startY1 = 300;
+	int startY2 = 300; 
+
 	for( inIterator.GoToBegin(); !inIterator.IsAtEnd(); inIterator.NextSlice() ){
 		ImageType3D::IndexType sliceIndex = inIterator.GetIndex();
 		printf( "Slice Index --- %d ---", tempInCounter++ );
 		ExtractFilterType::InputImageRegionType::SizeType sliceSize = inIterator.GetRegion().GetSize();
 		sliceSize[2] = 0;
+
+		if( tempInCounter > 46 && tempInCounter < 106 ){
+			//根据切片所在位置设定不同的参数
+			//找出有效slice区间
+			//确定每个分区参数
+			//无效区1-12 106-150
+			//12-46 47-97 98-105
+			startX1 = 100;
+			startX2 = 400;
+			startY1 = 256;
+			startY2 = 256;
+			size = 600.0f;
+			area = 10000.0f;
+		}
 
 		ExtractFilterType::InputImageRegionType sliceRegion = inIterator.GetRegion();
 		sliceRegion.SetSize( sliceSize );
@@ -91,17 +113,17 @@ int main( int argc, char* argv[] ){
 		Scalar color = Scalar( rng.uniform( 0, 255 ) );
 		int index = 0;
 
-		//开始算法，这是适用于测试图的代码，对于原图，系数等还需调整，这里y轴固定，x轴起点分别为1/3 cols，2/3 cols
-		for(int x = img.cols/3; x < img.cols/2; x++){
+		//开始算法，这是适用于测试图的代码，对于原图，系数等还需调整，对于测试图，这里y轴固定，x轴起点分别为1/3 cols，2/3 cols
+		for(int x = startX1; x < img.cols/2; x++){
 			//如果像素值为0（即背景点），则跳过
-			if(img.at<uchar>( img.rows/3, x ) == 0){
+			if(img.at<uchar>( startY1, x ) == 0){
 				continue;
 			} else {
 				//遍历contours，寻找该非0像素点所在的contours的序号
 				for (int i = 0; i < contours.size(); i++){
 					for(int j = 0; j < contours[i].size() - 1; j++){
 						//如果坐标相同，则计算所在的contours的周长，并记录序号index
-						if(contours[i][j].x == x && contours[i][j].y == img.rows/3){
+						if(contours[i][j].x == x && contours[i][j].y == startY1){
 							for(int k = 0; k < contours[i].size() - 1; k++){
 								if((contours[i][k+1].x != contours[i][k].x) && (contours[i][k+1].y != contours[i][k].y)){ 
 									distance[i] += 1.4142135f;
@@ -114,8 +136,8 @@ int main( int argc, char* argv[] ){
 					}
 				}
 			}
-			//若该contours周长大于600（适用于本测试图，原图的话需要分区设定不同的值），则退出大循环，开始画轮廓
-			if( distance[index] > 600.0f ){
+			//若该contours周长大于给定的值并且面积大于给定的值（适用于本测试图，原图的话需要分区设定不同的值），则退出大循环，开始画轮廓
+			if( distance[index] > size && fabs(contourArea(contours[index])) > area ){
 				break;
 			}
 		}
@@ -125,15 +147,24 @@ int main( int argc, char* argv[] ){
 		
 		//根据上面找到的序号画出左侧轮廓（此处也可用at方法画，at比较灵活，可以精确到像素点，想画几个画几个，像素值也可随意设定（不同点设置不同像素），而drawContours，只能送进去一个vector把整个vector用同一颜色画出来。。）
 		drawContours( drawing, contours, index, color, 1, 8, hierarchy, 0, Point(0, 0) );
+		//printf("%f\n", fabs(contourArea(contours[index])));
+
+		for(int i = 0; i < img.cols; i++){
+			for(int j = 0; j < img.rows; j++){
+				if(pointPolygonTest( contours[index], Point(i, j), 0 ) == 1){
+					drawing.at<uchar>(j, i) = 255;
+				}
+			}
+		}
 
 		//下文为画右边轮廓，原理同上
-		for(int x = 2*img.cols/3; x < img.cols; x++){
-			if(img.at<uchar>( img.rows/3, x ) == 0){
+		for(int x = startX2; x > img.cols/2; x--){
+			if(img.at<uchar>( startY2, x ) == 0){
 				continue;
 			} else {
 				for (int i = 0; i < contours.size(); i++){
 					for(int j = 0; j < contours[i].size() - 1; j++){
-						if(contours[i][j].x == x && contours[i][j].y == img.rows/3){
+						if(contours[i][j].x == x && contours[i][j].y == startY2){
 							for(int k = 0; k < contours[i].size() - 1; k++){
 								if((contours[i][k+1].x != contours[i][k].x) && (contours[i][k+1].y != contours[i][k].y)){ 
 									distance[i] += 1.4142135f;
@@ -146,12 +177,21 @@ int main( int argc, char* argv[] ){
 					}
 				}
 			}
-			if( distance[index] > 600.0f ){
+			if( distance[index] > size && fabs(contourArea(contours[index])) > area ){
 				break;
 			}
 		}
-
+		
 		drawContours( drawing, contours, index, color, 1, 8, hierarchy, 0, Point(0, 0) );
+		//printf("%f\n", fabs(contourArea(contours[index])));
+
+		for(int i = 0; i < img.cols; i++){
+			for(int j = 0; j < img.rows; j++){
+				if(pointPolygonTest( contours[index], Point(i, j), 0 ) == 1){
+					drawing.at<uchar>(j, i) = 255;
+				}
+			}
+		}
 
 		ImageType2D::Pointer itkDrawing;
 		try{
