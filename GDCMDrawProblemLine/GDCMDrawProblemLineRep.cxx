@@ -90,7 +90,9 @@ int main( int argc, char* argv[] ){
 	joinSeries->SetSpacing( originImage3D->GetSpacing()[2] );
 
 	int tempInCounter = 1;
-	for( inIterator.GoToBegin(); !inIterator.IsAtEnd(); inIterator.NextSlice() ){
+	int xxx=0;
+	for( inIterator.GoToBegin(); !inIterator.IsAtEnd()&&xxx<1; inIterator.NextSlice() ){//IsAtEnd()
+		xxx++;
 		ImageType3D::IndexType sliceIndex = inIterator.GetIndex();
 		printf( "Slice Index --- %d ---", tempInCounter++ );
 		ExtractFilterType::InputImageRegionType::SizeType sliceSize = inIterator.GetRegion().GetSize();
@@ -265,8 +267,15 @@ void NodeDelete(int possition,int i,int x,int y);
 		
 		printf( "drawing\n" );
 		Mat drawing = Mat::zeros( img.size(), CV_8UC1 );
-
-
+		/*
+		for( int i = 0; i < repairedByStatus.size(); i++ ){
+			if( repairedByStatus[i].status ){
+				drawing.at<uchar>( repairedByStatus[i].y, repairedByStatus[i].x ) = 128;
+			} else {
+				drawing.at<uchar>( repairedByStatus[i].y, repairedByStatus[i].x ) = 255;
+			}
+		}
+		*/
 		
 		for( int i = 0; i < contours.size(); i++ ){
 			Scalar color = Scalar( rng.uniform( 0, 255 ) );
@@ -323,7 +332,7 @@ if(statusBegin==-1){
 	return 0;
 }
 	int statusEnd=0;
-	statusEnd=findStatusEnd(repairedByStatus,i);
+	statusEnd=findStatusEnd(repairedByStatus,statusBegin);
 	delAndDrawLine(repairedByStatus,repairedByStatus[i].contour,statusBegin,statusEnd);
 	int newContourBeginI=findNewContourBegin(repairedByStatus,i);
 	return repairContour(repairedByStatus,newContourBeginI);//new contour
@@ -365,11 +374,12 @@ void delAndDrawLine(cv::Vector<APoint> &repairedByStatus,int i,int statusBegin,i
 	}
 	int Rx=repairedByStatus[statusEnd].x-repairedByStatus[statusBegin].x;
 	int Ry=repairedByStatus[statusEnd].y-repairedByStatus[statusBegin].y;
+	printf("=============%d,%d==========",Rx,Ry);
 	//assert the node of statusEnd is known, then we have four possible related possition cases.
 	if(Rx>0&&Ry>0)
 	for(int x=1;x<=Rx;x++){
 		//first one , normal one.
-		int y=Ry/Rx * x;
+		int y=((double)Ry)/((double)Rx) * x;
 		cv::Point aPoint;
 		aPoint.x=x+repairedByStatus[statusBegin].x;
 		aPoint.y=y;
@@ -378,7 +388,7 @@ void delAndDrawLine(cv::Vector<APoint> &repairedByStatus,int i,int statusBegin,i
 	if(Rx<0&&Ry>0)
 		for(int x=-1;x>=Rx;x--){
 		//first one , normal one.
-		int y=Ry/Rx * x;
+		int y=((double)Ry)/((double)Rx) * x;
 				cv::Point aPoint;
 		aPoint.x=x+repairedByStatus[statusBegin].x;
 		aPoint.y=y;
@@ -388,7 +398,7 @@ void delAndDrawLine(cv::Vector<APoint> &repairedByStatus,int i,int statusBegin,i
 	if(Rx<0&&Ry<0)
 		for(int x=-1;x>=Rx;x--){
 		//first one , normal one.
-		int y=Ry/Rx * x;
+		int y=((double)Ry)/((double)Rx) * x;
 				cv::Point aPoint;
 		aPoint.x=x+repairedByStatus[statusBegin].x;
 		aPoint.y=y;
@@ -397,7 +407,7 @@ void delAndDrawLine(cv::Vector<APoint> &repairedByStatus,int i,int statusBegin,i
 	if(Rx>0&&Ry<0)
 	for(int x=1;x<=Rx;x++){
 		//first one , normal one.
-		int y=Ry/Rx * x;
+		int y=((double)Ry)/((double)Rx) * x;
 				cv::Point aPoint;
 		aPoint.x=x+repairedByStatus[statusBegin].x;
 		aPoint.y=y;
