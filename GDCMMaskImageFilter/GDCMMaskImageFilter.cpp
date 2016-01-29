@@ -15,9 +15,6 @@
 //切片文件集合成3D图像的头文件
 #include "itkJoinseriesImageFilter.h"
 
-//掩模图像过滤器的头文件
-#include "itkMaskImageFilter.h"
-
 int main( int argc, char* argv[] ){
 	if( argc < 4 ){
 		std::cerr << "Usage: " << argv[0] << " InputImageFile OutputImageFile" << std::endl;
@@ -80,18 +77,18 @@ int main( int argc, char* argv[] ){
 	joinSeries->SetOrigin( originImage3D->GetOrigin()[2] );
 	joinSeries->SetSpacing( originImage3D->GetSpacing()[2] );
 
-	for( originIterator.GoToBegin(); !originIterator.IsAtEnd(); originIterator.NextSlice() ){
+	for( originIterator.GoToBegin(), maskIterator.GoToBegin(); !originIterator.IsAtEnd(); originIterator.NextSlice(), maskIterator.NextSlice() ){
 		ImageType3D::IndexType originSliceIndex = originIterator.GetIndex();
-		ExtractFilterType::InputImageRegionType::SizeType originSliceSize = originIterator.GetRegion().GetSize();
-		originSliceSize[2] = 0;
 		ExtractFilterType::InputImageRegionType originSliceRegion = originIterator.GetRegion();
+		ExtractFilterType::InputImageRegionType::SizeType originSliceSize = originSliceRegion.GetSize();
+		originSliceSize[2] = 0;
 		originSliceRegion.SetSize( originSliceSize );
 		originSliceRegion.SetIndex( originSliceIndex );
 
 		ImageType3D::IndexType maskSliceIndex = maskIterator.GetIndex();
-		ExtractFilterType::InputImageRegionType::SizeType maskSliceSize = maskIterator.GetRegion().GetSize();
-		maskSliceSize[2] = 0;
 		ExtractFilterType::InputImageRegionType maskSliceRegion = maskIterator.GetRegion();
+		ExtractFilterType::InputImageRegionType::SizeType maskSliceSize = maskSliceRegion.GetSize();
+		maskSliceSize[2] = 0;
 		maskSliceRegion.SetSize( maskSliceSize );
 		maskSliceRegion.SetIndex( maskSliceIndex );
 		
@@ -123,21 +120,18 @@ int main( int argc, char* argv[] ){
 			return EXIT_FAILURE;
 		}
 
-		typedef itk::MaskImageFilter< ImageType2D, ImageType2D > MaskFilterType;
-		MaskFilterType::Pointer maskImageFilter = MaskFilterType::New();
-		
-		maskImageFilter->SetInput( originExtractor->GetOutput() );
-		maskImageFilter->SetMaskImage( maskExtractor->GetOutput() );
+		//设定图像区域迭代器，用于读写像素点值
+		typedef itk::ImageRegionIterator< ImageType2D > IteratorType;
+		IteratorType origin( originExtractor->GetOutput(), originExtractor->GetOutput()->GetRequestedRegion() );
+		IteratorType mask( maskExtractor->GetOutput(), maskExtractor->GetOutput()->GetRequestedRegion() );
 
-		try{
-			maskImageFilter->Update();
-		} catch (itk::ExceptionObject &excp){
-			std::cerr << "ExceptionObject: maskImageFilter->Update() caught !" << std::endl;
-			std::cerr << excp << std::endl;
-			return EXIT_FAILURE;
+		for ( origin.GoToBegin(), mask.GoToBegin(); !mask.IsAtEnd(); origin++, mask++ ){
+			if( mask.Get() == 0 ){
+				origin.Set(0);
+			}
 		}
 
-		joinSeries->PushBackInput( maskImageFilter->GetOutput() );
+		joinSeries->PushBackInput( originExtractor->GetOutput() );
 	}
 
 	try{
