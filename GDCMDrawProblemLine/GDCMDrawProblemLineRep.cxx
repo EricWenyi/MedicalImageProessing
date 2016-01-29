@@ -90,9 +90,9 @@ int main( int argc, char* argv[] ){
 	joinSeries->SetSpacing( originImage3D->GetSpacing()[2] );
 
 	int tempInCounter = 1;
-	int xxx=0;
-	for( inIterator.GoToBegin(); !inIterator.IsAtEnd()&&xxx<1; inIterator.NextSlice() ){//IsAtEnd()
-		xxx++;
+	//int xxx=0;
+	for( inIterator.GoToBegin(); !inIterator.IsAtEnd(); inIterator.NextSlice() ){//IsAtEnd()
+		//xxx++;
 		ImageType3D::IndexType sliceIndex = inIterator.GetIndex();
 		printf( "Slice Index --- %d ---", tempInCounter++ );
 		ExtractFilterType::InputImageRegionType::SizeType sliceSize = inIterator.GetRegion().GetSize();
@@ -379,7 +379,7 @@ void delAndDrawLine(cv::Vector<APoint> &repairedByStatus,int i,int statusBegin,i
 	if(Rx>0&&Ry>0)
 	for(int x=1;x<=Rx;x++){
 		//first one , normal one.
-		int y=((double)Ry)/((double)Rx) * x;
+		int y=((double)Ry)/((double)Rx) * x+repairedByStatus[statusBegin].y;
 		cv::Point aPoint;
 		aPoint.x=x+repairedByStatus[statusBegin].x;
 		aPoint.y=y;
@@ -388,7 +388,7 @@ void delAndDrawLine(cv::Vector<APoint> &repairedByStatus,int i,int statusBegin,i
 	if(Rx<0&&Ry>0)
 		for(int x=-1;x>=Rx;x--){
 		//first one , normal one.
-		int y=((double)Ry)/((double)Rx) * x;
+		int y=((double)Ry)/((double)Rx) * x+repairedByStatus[statusBegin].y;
 				cv::Point aPoint;
 		aPoint.x=x+repairedByStatus[statusBegin].x;
 		aPoint.y=y;
@@ -398,7 +398,7 @@ void delAndDrawLine(cv::Vector<APoint> &repairedByStatus,int i,int statusBegin,i
 	if(Rx<0&&Ry<0)
 		for(int x=-1;x>=Rx;x--){
 		//first one , normal one.
-		int y=((double)Ry)/((double)Rx) * x;
+		int y=((double)Ry)/((double)Rx) * x+repairedByStatus[statusBegin].y;
 				cv::Point aPoint;
 		aPoint.x=x+repairedByStatus[statusBegin].x;
 		aPoint.y=y;
@@ -407,7 +407,7 @@ void delAndDrawLine(cv::Vector<APoint> &repairedByStatus,int i,int statusBegin,i
 	if(Rx>0&&Ry<0)
 	for(int x=1;x<=Rx;x++){
 		//first one , normal one.
-		int y=((double)Ry)/((double)Rx) * x;
+		int y=((double)Ry)/((double)Rx) * x+repairedByStatus[statusBegin].y;
 				cv::Point aPoint;
 		aPoint.x=x+repairedByStatus[statusBegin].x;
 		aPoint.y=y;
