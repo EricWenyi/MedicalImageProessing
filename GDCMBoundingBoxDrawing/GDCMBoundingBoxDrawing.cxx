@@ -84,12 +84,19 @@ int main( int argc, char* argv[] ){
 		findContours( img, contours, hierarchy, CV_RETR_CCOMP, CV_CHAIN_APPROX_NONE, Point(0, 0) );
 		
 		Mat drawing = Mat::zeros( img.size(), CV_8UC1 );
-		Scalar color = Scalar( rng.uniform( 0, 255 ) );
-		vector<Rect> boundingBox( contours.size() );
+		Scalar color = Scalar( 255 );
+		vector<RotatedRect> boundingBox( contours.size() );
+		Point2f vertices[4];
+		float a, b;
+
 		for(int i = 0; i < contours.size(); i++){
-			boundingBox[i] = boundingRect( Mat(contours[i]) );
-			rectangle(drawing, boundingBox[i].tl(), boundingBox[i].br(), color, 1, 8, 0);
-			drawContours( drawing, contours, i, color, 1, 8, hierarchy, 0, Point(0, 0) );
+			boundingBox[i] = minAreaRect( Mat(contours[i]) );
+			boundingBox[i].points(vertices);
+			a = sqrt((vertices[0].x - vertices[1].x) * (vertices[0].x - vertices[1].x) + (vertices[0].y - vertices[1].y) * (vertices[0].y - vertices[1].y));
+			b = sqrt((vertices[1].x - vertices[2].x) * (vertices[1].x - vertices[2].x) + (vertices[1].y - vertices[2].y) * (vertices[1].y - vertices[2].y));
+			if( a * b > 2.0f * contourArea(contours[i]) ){
+				drawContours( drawing, contours, i, color, 1, 8, hierarchy, 0, Point(0, 0) );
+			}
 		}
 		
 		ImageType2D::Pointer itkDrawing;
