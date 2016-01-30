@@ -6,7 +6,7 @@ endif()
 
 
 # This project is designed to be built outside the Insight source tree.
-project(GDCMDrawProblemLineRep)
+project(GDCMDrawProblemLine_Combined)
 
 # Find ITK.
 find_package(ITK REQUIRED)
@@ -14,6 +14,6 @@ include(${ITK_USE_FILE})
 find_package( OpenCV REQUIRED )
 include_directories( ${OpenCV_INCLUDE_DIRS} )
 
-add_executable(GDCMDrawProblemLineRep GDCMDrawProblemLineRep.cxx )
+add_executable(GDCMDrawProblemLine_Combined GDCMDrawProblemLine_Combined.cxx )
 
-target_link_libraries(GDCMDrawProblemLineRep ${ITK_LIBRARIES} ${OpenCV_LIBS})
+target_link_libraries(GDCMDrawProblemLine_Combined ${ITK_LIBRARIES} ${OpenCV_LIBS})
