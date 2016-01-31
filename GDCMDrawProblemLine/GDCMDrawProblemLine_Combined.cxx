@@ -20,6 +20,7 @@
 #include "cv.h"
 #include <math.h>
 
+#define REPAIR_IGNORE_THRESHOLD 150
 
 struct APoint{
 			int contour;
@@ -39,7 +40,7 @@ int findStatusEnd(cv::Vector<APoint> &repairedByStatus,int i);
 
 int findNewContourBegin(cv::Vector<APoint> &repairedByStatus,int i);
 
-void delAndDrawLine(cv::Vector<APoint> &repairedByStatus,int i,int statusBegin,int statusEnd);
+int delAndDrawLine(cv::Vector<APoint> &repairedByStatus,int i,int statusBegin,int statusEnd);
 //TODO:vector structor
 void AddNewNode(int possition,int i,cv::Point &newNode);
 
@@ -90,7 +91,9 @@ int main( int argc, char* argv[] ){
 	joinSeries->SetSpacing( originImage3D->GetSpacing()[2] );
 
 	int tempInCounter = 1;
-	for( inIterator.GoToBegin(); !inIterator.IsAtEnd(); inIterator.NextSlice()){
+	int xxx=0;
+	for( inIterator.GoToBegin(); !inIterator.IsAtEnd()&&xxx<9; inIterator.NextSlice()){
+		xxx++;
 		ImageType3D::IndexType sliceIndex = inIterator.GetIndex();
 		printf( "Slice Index --- %d ---", tempInCounter++ );
 		ExtractFilterType::InputImageRegionType::SizeType sliceSize = inIterator.GetRegion().GetSize();
@@ -247,19 +250,20 @@ int main( int argc, char* argv[] ){
 		// Draw contours
 		printf( "drawing\n" );
 		Mat drawing = Mat::zeros( img.size(), CV_8UC1 );
-		/*
+	
 		for( int i = 0; i < contours.size(); i++ ){
 			Scalar color = Scalar( rng.uniform( 0, 255 ) );
 			drawContours( drawing, contours, i, color, 1, 8, hierarchy, 0, Point(0, 0) );//注意参数，之前吃大亏了
 		}
-		*/
+		
+		/*
 		for( int i = 0; i < repairedByStatus.size(); i++ ){
 			if( repairedByStatus[i].status ){
 				drawing.at<uchar>( repairedByStatus[i].y, repairedByStatus[i].x ) = 128;
 			} else {
 				drawing.at<uchar>( repairedByStatus[i].y, repairedByStatus[i].x ) = 255;
 			}
-		}
+		}*/
 		ImageType2D::Pointer itkDrawing;
 		try{
 			itkDrawing=itk::OpenCVImageBridge::CVMatToITKImage< ImageType2D >( drawing );
@@ -300,19 +304,49 @@ int repairContour(cv::Vector<APoint> &repairedByStatus,int i){
 	int statusBegin=0;
 	printf("Reparing %d/%d repairedByStatus",i,repairedByStatus.size());
 	statusBegin=findStatusBegin(repairedByStatus,i);
-if(statusBegin==-1){
+if(statusBegin==-1){//-1 这个cotour没有 -2 这张图没有
 	int newContourBeginI=findNewContourBegin(repairedByStatus,i);
 	printf("status -1");
 	return repairContour(repairedByStatus,newContourBeginI);//new contour
 }else if(statusBegin==-2){
 	return 0;
 }
+	//好几段的情况。。。
 	int statusEnd=0;
 	statusEnd=findStatusEnd(repairedByStatus,statusBegin);
 	printf("statusEndFound,%d^%d==",statusBegin,statusEnd);
 	delAndDrawLine(repairedByStatus,repairedByStatus[i].contour,statusBegin,statusEnd);
 	printf("DelAndDrawLineSuc");
+
+	if(repairedByStatus[statusEnd+1].contour==repairedByStatus[statusEnd].contour){
+	
+	int substatusBegin=statusEnd+1;
+	int substatusEnd=statusEnd+1;
+	while(1){
+	substatusBegin=findStatusBegin(repairedByStatus,substatusBegin);
+	printf("while1:findStatusBegin %d=",substatusBegin);
+	if(substatusBegin==-1){//-1 这个cotour没有
+		break;
+	}else if(substatusBegin==-2){
+		break;
+	}
+	substatusEnd=findStatusEnd(repairedByStatus,substatusBegin);
+	printf("while1:findStatusEnd %d=",substatusEnd);
+	delAndDrawLine(repairedByStatus,repairedByStatus[i].contour,substatusBegin,substatusEnd);
+	printf("while1:delAndDrawLinesuc");
+	if(substatusEnd==repairedByStatus.size()-1)
+		break;
+	if(repairedByStatus[substatusEnd+1].contour==repairedByStatus[substatusEnd].contour)
+	substatusBegin=substatusEnd+1;
+	else
+		break;
+	//loop end
+	}
+}
 	int newContourBeginI=findNewContourBegin(repairedByStatus,i);
+	if(newContourBeginI=-2)
+		return 0;
+	else
 	return repairContour(repairedByStatus,newContourBeginI);//new contour
 
 }
@@ -331,18 +365,24 @@ int findStatusBegin(cv::Vector<APoint> &repairedByStatus,int i){
 
 int findStatusEnd(cv::Vector<APoint> &repairedByStatus,int i){
 	int currentContour=repairedByStatus[i].contour;
-	while(repairedByStatus[i].contour==currentContour&&(repairedByStatus[i].status))i++;
+	while(repairedByStatus[i].contour==currentContour&&(repairedByStatus[i].status)&&(i<repairedByStatus.size()-1))i++;
 	return i-1;
 }
 
 int findNewContourBegin(cv::Vector<APoint> &repairedByStatus,int i){
 	int currentContour=repairedByStatus[i].contour;
-	while(repairedByStatus[i].contour==currentContour)i++;
+	while((repairedByStatus[i].contour==currentContour)&&(i<repairedByStatus.size()-1))i++;
+	if(i==repairedByStatus.size()-1){
+		return -2;
+	}
 	return i;
 }
 
-void delAndDrawLine(cv::Vector<APoint> &repairedByStatus,int i,int statusBegin,int statusEnd){
+int delAndDrawLine(cv::Vector<APoint> &repairedByStatus,int i,int statusBegin,int statusEnd){
 	int currentNode=0;
+
+	//if(statusEnd-statusBegin>REPAIR_IGNORE_THRESHOLD)
+		//return 0;
 
 	while((contours[i][currentNode].x!=repairedByStatus[statusBegin].x)||(contours[i][currentNode].y!=repairedByStatus[statusBegin].y)){
 		currentNode++;
@@ -391,12 +431,15 @@ void delAndDrawLine(cv::Vector<APoint> &repairedByStatus,int i,int statusBegin,i
 		aPoint.y=y;
 		AddNewNode(currentNode,i,aPoint);
 	}
+	return 0;
 }
 //TODO:vector structor
 void AddNewNode(int possition,int i,cv::Point &newNode){
-	contours[i].insert(contours[i].begin()+possition,newNode);
+//	contours[i].insert(contours[i].begin()+possition,newNode);
+	printf("add");
 }
 
 void NodeDelete(int possition,int i){
 	contours[i].erase(contours[i].begin()+possition);
+	printf("del");
 }
