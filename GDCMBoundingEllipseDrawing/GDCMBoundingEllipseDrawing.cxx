@@ -8,6 +8,8 @@
 
 #include "itkOpenCVImageBridge.h"
 
+
+
 int main( int argc, char* argv[] ){
 	if( argc < 3 ){
 		std::cerr << "Usage: " << argv[0] << "InputImageFile OutputImageFile" << std::endl;
@@ -90,6 +92,7 @@ int main( int argc, char* argv[] ){
 		vector<RotatedRect> ellipseBox( contours.size() );//将要用于框出椭圆
 		vector<Rect> boundingBox( contours.size() );//另有minAreaRect是找出面积最小的旋转矩形（RotatedRect）
 		Point2f vertices[4];//用来存放提取的旋转矩形端点
+		vector<int> contour_To_Delete;
 
 		for(int i = 0; i < contours.size(); i++){
 			//之前的boudingBox
@@ -97,7 +100,13 @@ int main( int argc, char* argv[] ){
 			//rectangle(drawing, boundingBox[i].tl(), boundingBox[i].br(), color, 1, 8, 0);
 			if(contours[i].size() >= 5){//众所周知，五点二次曲线，如果轮廓的点少于5个会报错
 				fixedEllipse[i] = fitEllipse(contours[i]);
-				ellipse(drawing, fixedEllipse[i], color, 1, 8);//单独椭圆保存成一张图（一个Mat），然后再findContours，并找它的minAreaRect
+				//std::cout<<fixedEllipse[i].size.width<<" "<<fixedEllipse[i].size.height<<std::endl;
+				/*if (fixedEllipse[i].size.height / fixedEllipse[i].size.width > 3){
+					contours.erase(contours.begin() + i);
+					i--;
+				}
+				*/
+				//ellipse(drawing, fixedEllipse[i], color, 1, 8);//单独椭圆保存成一张图（一个Mat），然后再findContours，并找它的minAreaRect
 				//本部分是用来划contours的旋转矩形
 				//ellipseBox[i] = minAreaRect(contours[i]);
 				//提取的点保存于vertices
@@ -105,15 +114,11 @@ int main( int argc, char* argv[] ){
 				//for(int i=0;i<4;i++){
                       //line( drawing, vertices[i], vertices[(i+1)%4], color);//四个角点连成线，最终形成旋转的矩形。    
 				//}
-				drawContours( drawing, contours, i, color, 1, 8, hierarchy, 0, Point(0, 0) );//划原轮廓
+				
 			}
-			//原boundingBox
-			/*
-			if( boundingBox[i].area() / contourArea(contours[i]) > 2.0f ){
-				drawContours( drawing, contours, i, color, 1, 8, hierarchy, 0, Point(0, 0) );
-			}
-			*/
-			
+
+
+			drawContours( drawing, contours, i, color, 1, 8, hierarchy, 0, Point(0, 0) );//划原轮廓
 		}
 		
 		ImageType2D::Pointer itkDrawing;
