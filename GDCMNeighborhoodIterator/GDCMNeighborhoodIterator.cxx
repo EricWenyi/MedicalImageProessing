@@ -60,32 +60,19 @@ int main( int argc, char* argv[] ){
 		bool isUpConnected;//是否跟别的contour的点相连（26领域相连），默认为false
 		bool isDownConnected;//是否跟别的contour的点相连（26领域相连），默认为false
 	};
-	vector<APoint> points;
-	vector<int> eraseIndex;
+	APoint apoint;//结构体apoint，临时使用，用一次push_back一次，不断覆盖
+	vector<APoint> points;//容器points，用来装每张切片里头的所有点，多次使用
 
-	APoint apoint;
-	int tempIndex = -1;
-	int eraseCount = 0;
+	vector<int> eraseIndex;//容器eraseIndex，用来装每张切片里头所有该删的点，多次使用
+	int tempIndex = -1;//为了让之后该删的点的序号不重复装入容器，默认值为-1，确保第一次能执行
 
+	//邻域迭代器
 	typedef itk::ConstNeighborhoodIterator< ImageType3D > NeighborhoodIteratorType;
 	NeighborhoodIteratorType::RadiusType radius;
-	radius.Fill(1);
+	radius.Fill(1);//设定领域半径，所有方向半径都为1，及3*3*3
 	NeighborhoodIteratorType it( radius, originImage3D, originImage3D->GetLargestPossibleRegion() );
-	ImageType3D::IndexType location;
+	ImageType3D::IndexType location;//location用于跳转邻域迭代器至所需要的点的位置
 	/*
-	for(it.GoToBegin(); !it.IsAtEnd(); it++){
-		//std::cout<<it.GetElement(26)<<std::endl;//get the buffer address of neighbor voxels
-		ImageType3D::IndexType center = it.GetIndex();
-		//std::cout << center[0] << " " << center[1] << " " << center[2] << std::endl;
-		//std::cout<<it.GetCenterPixel()<<std::endl;
-		//NeighborhoodIteratorType::RegionType region = it.GetBoundingBoxAsImageRegion();
-		for(int i = 0; i < 27; i++){
-			ImageType3D::IndexType index = it.GetIndex(i);	
-			//std::cout << index[0] << " " << index[1] << " " << index[2] << std::endl;
-			//std::cout<<it.GetPixel(i)<<std::endl;
-		}
-	}
-
 	画出每个contours的boundingRect，长或宽小于3的所在contours删去
 	struct APoint{
 		int c;//所在轮廓序号，用于定位
@@ -111,7 +98,7 @@ int main( int argc, char* argv[] ){
 	*/
 	for( inIterator.GoToBegin(); !inIterator.IsAtEnd(); inIterator.NextSlice() ){
 		ImageType3D::IndexType sliceIndex = inIterator.GetIndex();
-		location[2] = sliceIndex[2];
+		location[2] = sliceIndex[2];//设定location的Z坐标为当前切片序号
 		printf( "Slice Index --- %d ---\n", sliceIndex[2] );
 		ExtractFilterType::InputImageRegionType::SizeType sliceSize = inIterator.GetRegion().GetSize();
 		sliceSize[2] = 0;
@@ -135,6 +122,7 @@ int main( int argc, char* argv[] ){
 		}
 
 		Mat img = itk::OpenCVImageBridge::ITKImageToCVMat< ImageType2D >( inExtractor->GetOutput() );
+
 		vector<vector<Point>> contours;
 		vector<Vec4i> hierarchy;
 		findContours( img, contours, hierarchy, CV_RETR_CCOMP, CV_CHAIN_APPROX_NONE, Point(0, 0) );
@@ -142,6 +130,7 @@ int main( int argc, char* argv[] ){
 		Mat drawing = Mat::zeros( img.size(), CV_8UC1 );
 		vector<Rect> boundingBox( contours.size() );
 		
+		//先删去boundingRect长或宽小于3的contours
 		for(int i = 0; i < contours.size(); i++){
 			boundingBox[i] = boundingRect(contours[i]);
 			if( boundingBox[i].height < 3 || boundingBox[i].width < 3 ){
@@ -150,6 +139,7 @@ int main( int argc, char* argv[] ){
 			}
 		}
 		
+		//将本张切片中每一个非背景点按contours顺序推到容器points中去
 		for(int i = 0; i < contours.size(); i++){
 			for(int j = 0; j < contours[i].size(); j++){
 				apoint.c = i;
@@ -164,10 +154,11 @@ int main( int argc, char* argv[] ){
 
 		//std::cout<<points.size()<<std::endl;
 
+		//推完以后，开始遍历容器points
 		for(int i = 0; i < points.size(); i++){
-			location[0] = points[i].x;
-			location[1] = points[i].y;
-			it.SetLocation(location);
+			location[0] = points[i].x;//设定location的X坐标为当前点X坐标
+			location[1] = points[i].y;//设定location的Y坐标为当前点Y坐标
+			it.SetLocation(location);//跳转邻域迭代器至当前点的位置
 			for(int j = 0; j < 9; j++){
 				if(it.GetPixel(j) != 0){
 					points[i].isUpConnected = true;
@@ -184,6 +175,7 @@ int main( int argc, char* argv[] ){
 
 			//std::cout<<points[i].c<<std::endl;
 
+			//将该删去的点推至容器eraseIndex中去，并保证不重复
 			if(points[i].isUpConnected == false && points[i].isDownConnected == false){
 				if(points[i].c != tempIndex){
 					eraseIndex.push_back(points[i].c);
@@ -193,7 +185,7 @@ int main( int argc, char* argv[] ){
 		}
 		
 		for(int i = 0; i < eraseIndex.size(); i++){
-			std::cout<<eraseIndex[i]<<std::endl;
+			//std::cout<<eraseIndex[i]<<std::endl;
 			drawContours( drawing, contours, eraseIndex[i], Scalar( 255 ), 1, 8, hierarchy, 0, Point(0, 0) );
 		}
 
@@ -212,6 +204,9 @@ int main( int argc, char* argv[] ){
 
 		eraseIndex.clear();
 		points.clear();
+
+		//eraseIndex.swap(vector<int>());
+		//points.swap(vector<APoint>());
 
 		ImageType2D::Pointer itkDrawing;
 		try{
