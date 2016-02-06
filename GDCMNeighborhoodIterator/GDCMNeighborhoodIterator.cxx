@@ -61,7 +61,12 @@ int main( int argc, char* argv[] ){
 		bool isDownConnected;//是否跟别的contour的点相连（26领域相连），默认为false
 	};
 	vector<APoint> points;
-	
+	vector<int> eraseIndex;
+
+	APoint apoint;
+	int tempIndex = -1;
+	int eraseCount = 0;
+
 	typedef itk::ConstNeighborhoodIterator< ImageType3D > NeighborhoodIteratorType;
 	NeighborhoodIteratorType::RadiusType radius;
 	radius.Fill(1);
@@ -144,9 +149,8 @@ int main( int argc, char* argv[] ){
 				i--;
 			}
 		}
-
+		
 		for(int i = 0; i < contours.size(); i++){
-			APoint apoint;
 			for(int j = 0; j < contours[i].size(); j++){
 				apoint.c = i;
 				apoint.n = j;
@@ -157,7 +161,7 @@ int main( int argc, char* argv[] ){
 				points.push_back(apoint);
 			}
 		}
-
+		
 		for(int i = 0; i < points.size(); i++){
 			location[0] = points[i].x;
 			location[1] = points[i].y;
@@ -175,10 +179,19 @@ int main( int argc, char* argv[] ){
 					break;
 				}
 			}
-			
+			//std::cout<<points[i].c<<std::endl;
 			if(points[i].isUpConnected == false && points[i].isDownConnected == false){
-				contours.erase(contours.begin() + points[i].c);
+				if(points[i].c > tempIndex){
+					eraseIndex.push_back(points[i].c);
+					tempIndex = points[i].c;
+				}
 			}
+		}
+		
+		for(int i = 0; i < eraseIndex.size(); i++){
+			std::cout<<eraseIndex[i]<<std::endl;
+			contours.erase(contours.begin() + eraseIndex[i] - eraseCount);
+			eraseCount++;
 		}
 
 		for(int i = 0; i < contours.size(); i++){
