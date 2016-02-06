@@ -175,9 +175,9 @@ int main( int argc, char* argv[] ){
 					break;
 				}
 			}
-
+			
 			if(points[i].isUpConnected == false && points[i].isDownConnected == false){
-				points.erase(points.begin() + points[i].c);
+				contours.erase(contours.begin() + points[i].c);
 				i--;
 			}
 		}
