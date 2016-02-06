@@ -161,7 +161,9 @@ int main( int argc, char* argv[] ){
 				points.push_back(apoint);
 			}
 		}
-		
+
+		//std::cout<<points.size()<<std::endl;
+
 		for(int i = 0; i < points.size(); i++){
 			location[0] = points[i].x;
 			location[1] = points[i].y;
@@ -179,9 +181,11 @@ int main( int argc, char* argv[] ){
 					break;
 				}
 			}
+
 			//std::cout<<points[i].c<<std::endl;
+
 			if(points[i].isUpConnected == false && points[i].isDownConnected == false){
-				if(points[i].c > tempIndex){
+				if(points[i].c != tempIndex){
 					eraseIndex.push_back(points[i].c);
 					tempIndex = points[i].c;
 				}
@@ -193,11 +197,14 @@ int main( int argc, char* argv[] ){
 			contours.erase(contours.begin() + eraseIndex[i] - eraseCount);
 			eraseCount++;
 		}
-
+		
 		for(int i = 0; i < contours.size(); i++){
 			drawContours( drawing, contours, i, Scalar( 255 ), 1, 8, hierarchy, 0, Point(0, 0) );
 		}
-		
+
+		eraseIndex.clear();
+		points.clear();
+
 		ImageType2D::Pointer itkDrawing;
 		try{
 			itkDrawing=itk::OpenCVImageBridge::CVMatToITKImage< ImageType2D >( drawing );
