@@ -194,12 +194,20 @@ int main( int argc, char* argv[] ){
 		
 		for(int i = 0; i < eraseIndex.size(); i++){
 			std::cout<<eraseIndex[i]<<std::endl;
-			contours.erase(contours.begin() + eraseIndex[i] - eraseCount);
-			eraseCount++;
+			drawContours( drawing, contours, eraseIndex[i], Scalar( 255 ), 1, 8, hierarchy, 0, Point(0, 0) );
 		}
-		
+
+		Mat draw = Mat::zeros( img.size(), CV_8UC1 );
 		for(int i = 0; i < contours.size(); i++){
-			drawContours( drawing, contours, i, Scalar( 255 ), 1, 8, hierarchy, 0, Point(0, 0) );
+			drawContours( draw, contours, i, Scalar( 255 ), 1, 8, hierarchy, 0, Point(0, 0) );
+		}
+
+		for(int i = 0; i < draw.cols; i++){
+			for(int j = 0; j < draw.rows; j++){
+				if(drawing.at<uchar>(j, i) != 0){
+					draw.at<uchar>(j, i) = 0;
+				}
+			}
 		}
 
 		eraseIndex.clear();
@@ -207,7 +215,7 @@ int main( int argc, char* argv[] ){
 
 		ImageType2D::Pointer itkDrawing;
 		try{
-			itkDrawing=itk::OpenCVImageBridge::CVMatToITKImage< ImageType2D >( drawing );
+			itkDrawing=itk::OpenCVImageBridge::CVMatToITKImage< ImageType2D >( draw );
 		} catch (itk::ExceptionObject &excp){
 			std::cerr << "Exception: CVMatToITKImage failure !" << std::endl;
 			std::cerr << excp << std::endl;
