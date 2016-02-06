@@ -51,7 +51,7 @@ int main( int argc, char* argv[] ){
 	joinSeries->SetSpacing( originImage3D->GetSpacing()[2] );\
 
 	using namespace cv;
-	int counter = 0;
+
 	struct APoint{
 		int c;//所在轮廓序号，用于定位
 		int n;//点在轮廓中的序号，用于定位
@@ -106,8 +106,8 @@ int main( int argc, char* argv[] ){
 	*/
 	for( inIterator.GoToBegin(); !inIterator.IsAtEnd(); inIterator.NextSlice() ){
 		ImageType3D::IndexType sliceIndex = inIterator.GetIndex();
-		printf( "Slice Index --- %d ---\n", counter++ );
-		location[2] = counter;
+		location[2] = sliceIndex[2];
+		printf( "Slice Index --- %d ---\n", sliceIndex[2] );
 		ExtractFilterType::InputImageRegionType::SizeType sliceSize = inIterator.GetRegion().GetSize();
 		sliceSize[2] = 0;
 		
@@ -178,7 +178,6 @@ int main( int argc, char* argv[] ){
 			
 			if(points[i].isUpConnected == false && points[i].isDownConnected == false){
 				contours.erase(contours.begin() + points[i].c);
-				i--;
 			}
 		}
 
