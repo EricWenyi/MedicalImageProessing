@@ -66,6 +66,7 @@ int main( int argc, char* argv[] ){
 	int labelCounter = 0;
 	int zeroCounter = 0;
 	int tempC = -1;
+	int tempL = -1;
 
 	//邻域迭代器
 	typedef itk::ConstNeighborhoodIterator< ImageType3D > NeighborhoodIteratorType;
@@ -73,83 +74,6 @@ int main( int argc, char* argv[] ){
 	radius.Fill(1);//设定领域半径，所有方向半径都为1，及3*3*3
 	NeighborhoodIteratorType it( radius, originImage3D, originImage3D->GetLargestPossibleRegion() );
 	ImageType3D::IndexType location;//location用于跳转邻域迭代器至所需要的点的位置
-	
-	/*
-	struct APoint{
-		int c;
-		int x;
-		int y;
-		int label;
-	};
-	APoint apoint;
-	vector<APoint> temp1;
-	vector<APoint> temp2;
-	vector<vector<APoint>> points;
-	
-	int labelCounter = 0;
-	int zeroCounter = 0;
-
-	//仅第一张切片中，按contours顺序推至temp1中，不同contours分配不同label，然后推至points
-	for(int i = 0; i < contours.size(); i++){
-		for(int j = 0; j < contours[i].size(); j++){
-			apoint.c = i;
-			apoint.x = contours[i][j].x;
-			apoint.y = contours[i][j].y;
-			apoint.label = labelCounter;
-			labelCounter++;
-			temp1.push_back(apoint);
-		}
-	}
-
-	points.push_back(temp1);
-
-	//第二张切片开始，每张切片先把当前层所有contours推至temp2中去，默认所有label为-1
-	//向上一层的9个邻域搜索非0点，若一个都没有，则为新label，则当前位置label = labelCounter; labelCounter++;
-	//若有，则到上一层的temp1中搜索（根据X，Y坐标），找到邻域的点的label并把当前位置也标为这个label
-	//然后将处理好的temp2推至points
-
-	for(int i = 0; i < contours.size(); i++){
-		for(int j = 0; j < contours[i].size(); j++){
-			apoint.c = i;
-			apoint.x = contours[i][j].x;
-			apoint.y = contours[i][j].y;
-			apoint.label = -1;
-			temp2.push_back(apoint);
-		}
-	}
-	
-	for(int i = 0; i < temp2.size(); i++){
-		location[0] = temp2[i].x;
-		location[1] = temp2[i].y;
-		it.SetLocation(location);
-		for(int j = 0; j < 9; j++){
-			if(it.GetPixel(j) != 0){
-				for(int k = 0; k < temp1.size(); k++){
-					if(temp1[k].x == it.GetIndex(j)[0] && temp1[k].y == it.GetIndex(j)[1]){
-						temp2[i].label = temp1[k].label;
-					}
-				}
-			} else {
-				zeroCounter++;
-			}
-		}
-		if(zeroCounter == 9){
-			temp2[i].label = labelCounter;
-			labelCounter++;
-			zeroCounter = 0;
-		}
-	}
-
-	points.push_back(temp2);
-
-	//然后清除temp1，并把temp2的内存复制到temp1，清除temp2
-	temp1.clear();
-	temp1.resize(temp2.size());
-	memcpy(&temp1[0], &temp2[0], temp2.size() * sizeof(APoint));
-	temp2.clear();
-
-	//后面的切片以此类推，算法结束
-	*/
 
 	for( inIterator.GoToBegin(); !inIterator.IsAtEnd(); inIterator.NextSlice() ){
 		ImageType3D::IndexType sliceIndex = inIterator.GetIndex();
@@ -225,9 +149,12 @@ int main( int argc, char* argv[] ){
 				}
 				if(zeroCounter == 9){
 					if(tempC != temp2[i].c){
-						tempC = temp2[i].c;
 						temp2[i].label = labelCounter;
 						labelCounter++;
+						tempL = temp2[i].label;
+						tempC = temp2[i].c;
+					} else {
+						temp2[i].label = tempL;
 					}
 					//std::cout<<temp2[i].label<<std::endl;
 					zeroCounter = 0;
@@ -241,8 +168,6 @@ int main( int argc, char* argv[] ){
 			memcpy(&temp1[0], &temp2[0], temp2.size() * sizeof(APoint));
 			temp2.clear();
 		}
-
-		//Z轴小于3的label删除
 		
 		ImageType2D::Pointer itkDrawing;
 		try{
