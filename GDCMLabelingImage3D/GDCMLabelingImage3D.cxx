@@ -53,6 +53,7 @@ int main( int argc, char* argv[] ){
 	using namespace cv;
 
 	struct APoint{
+		int c;
 		int x;
 		int y;
 		int label;
@@ -64,6 +65,7 @@ int main( int argc, char* argv[] ){
 	
 	int labelCounter = 0;
 	int zeroCounter = 0;
+	int tempC = -1;
 
 	//邻域迭代器
 	typedef itk::ConstNeighborhoodIterator< ImageType3D > NeighborhoodIteratorType;
@@ -74,6 +76,7 @@ int main( int argc, char* argv[] ){
 	
 	/*
 	struct APoint{
+		int c;
 		int x;
 		int y;
 		int label;
@@ -89,6 +92,7 @@ int main( int argc, char* argv[] ){
 	//仅第一张切片中，按contours顺序推至temp1中，不同contours分配不同label，然后推至points
 	for(int i = 0; i < contours.size(); i++){
 		for(int j = 0; j < contours[i].size(); j++){
+			apoint.c = i;
 			apoint.x = contours[i][j].x;
 			apoint.y = contours[i][j].y;
 			apoint.label = labelCounter;
@@ -106,6 +110,7 @@ int main( int argc, char* argv[] ){
 
 	for(int i = 0; i < contours.size(); i++){
 		for(int j = 0; j < contours[i].size(); j++){
+			apoint.c = i;
 			apoint.x = contours[i][j].x;
 			apoint.y = contours[i][j].y;
 			apoint.label = -1;
@@ -182,6 +187,7 @@ int main( int argc, char* argv[] ){
 		if(sliceIndex[2] == 0){
 			for(int i = 0; i < contours.size(); i++){
 				for(int j = 0; j < contours[i].size(); j++){
+					apoint.c = i;
 					apoint.x = contours[i][j].x;
 					apoint.y = contours[i][j].y;
 					apoint.label = labelCounter;
@@ -193,6 +199,7 @@ int main( int argc, char* argv[] ){
 		} else {
 			for(int i = 0; i < contours.size(); i++){
 				for(int j = 0; j < contours[i].size(); j++){
+					apoint.c = i;
 					apoint.x = contours[i][j].x;
 					apoint.y = contours[i][j].y;
 					apoint.label = -1;
@@ -209,7 +216,7 @@ int main( int argc, char* argv[] ){
 						for(int k = 0; k < temp1.size(); k++){
 							if(temp1[k].x == it.GetIndex(j)[0] && temp1[k].y == it.GetIndex(j)[1]){
 								temp2[i].label = temp1[k].label;
-								std::cout<<temp2[i].label<<std::endl;
+								//std::cout<<temp2[i].label<<std::endl;
 							}
 						}
 					} else {
@@ -217,10 +224,12 @@ int main( int argc, char* argv[] ){
 					}
 				}
 				if(zeroCounter == 9){
-					temp2[i].label = labelCounter;
-					//加入判断属于同一个contours，避免重复couter++
+					if(tempC != temp2[i].c){
+						tempC = temp2[i].c;
+						temp2[i].label = labelCounter;
+						labelCounter++;
+					}
 					//std::cout<<temp2[i].label<<std::endl;
-					labelCounter++;
 					zeroCounter = 0;
 				}
 			}
