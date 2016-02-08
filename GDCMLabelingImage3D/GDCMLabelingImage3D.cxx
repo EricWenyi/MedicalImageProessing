@@ -185,9 +185,9 @@ int main( int argc, char* argv[] ){
 					apoint.x = contours[i][j].x;
 					apoint.y = contours[i][j].y;
 					apoint.label = labelCounter;
-					labelCounter++;
 					temp1.push_back(apoint);
 				}
+				labelCounter++;
 			}
 			points.push_back(temp1);
 		} else {
@@ -209,6 +209,7 @@ int main( int argc, char* argv[] ){
 						for(int k = 0; k < temp1.size(); k++){
 							if(temp1[k].x == it.GetIndex(j)[0] && temp1[k].y == it.GetIndex(j)[1]){
 								temp2[i].label = temp1[k].label;
+								std::cout<<temp2[i].label<<std::endl;
 							}
 						}
 					} else {
@@ -217,6 +218,8 @@ int main( int argc, char* argv[] ){
 				}
 				if(zeroCounter == 9){
 					temp2[i].label = labelCounter;
+					//加入判断属于同一个contours，避免重复couter++
+					//std::cout<<temp2[i].label<<std::endl;
 					labelCounter++;
 					zeroCounter = 0;
 				}
