@@ -62,22 +62,21 @@ int main( int argc, char* argv[] ){
 	vector<APoint> temp1;
 	vector<APoint> temp2;
 	vector<vector<APoint>> points;
-	
+
 	int labelCounter = 0;
 	int zeroCounter = 0;
-	int tempC = -1;
-	int tempL = -1;
+	int nowC = -1;
+	int nowL = -1;
 
-	//邻域迭代器
 	typedef itk::ConstNeighborhoodIterator< ImageType3D > NeighborhoodIteratorType;
 	NeighborhoodIteratorType::RadiusType radius;
-	radius.Fill(1);//设定领域半径，所有方向半径都为1，及3*3*3
+	radius.Fill(1);
 	NeighborhoodIteratorType it( radius, originImage3D, originImage3D->GetLargestPossibleRegion() );
-	ImageType3D::IndexType location;//location用于跳转邻域迭代器至所需要的点的位置
+	ImageType3D::IndexType location;
 
 	for( inIterator.GoToBegin(); !inIterator.IsAtEnd(); inIterator.NextSlice() ){
 		ImageType3D::IndexType sliceIndex = inIterator.GetIndex();
-		location[2] = sliceIndex[2];//设定location的Z坐标为当前切片序号
+		location[2] = sliceIndex[2];
 		printf( "Slice Index --- %d ---\n", sliceIndex[2] );
 		ExtractFilterType::InputImageRegionType::SizeType sliceSize = inIterator.GetRegion().GetSize();
 		sliceSize[2] = 0;
@@ -103,11 +102,10 @@ int main( int argc, char* argv[] ){
 		Mat img = itk::OpenCVImageBridge::ITKImageToCVMat< ImageType2D >( inExtractor->GetOutput() );
 
 		vector<vector<Point>> contours;
-		vector<Vec4i> hierarchy;
-		findContours( img, contours, hierarchy, CV_RETR_CCOMP, CV_CHAIN_APPROX_NONE, Point(0, 0) );
+		findContours( img, contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_NONE, Point(0, 0) );
 		
 		Mat drawing = Mat::zeros( img.size(), CV_8UC1 );
-		
+
 		if(sliceIndex[2] == 0){
 			for(int i = 0; i < contours.size(); i++){
 				for(int j = 0; j < contours[i].size(); j++){
@@ -119,7 +117,6 @@ int main( int argc, char* argv[] ){
 				}
 				labelCounter++;
 			}
-			points.push_back(temp1);
 		} else {
 			for(int i = 0; i < contours.size(); i++){
 				for(int j = 0; j < contours[i].size(); j++){
@@ -135,40 +132,61 @@ int main( int argc, char* argv[] ){
 				location[0] = temp2[i].x;
 				location[1] = temp2[i].y;
 				it.SetLocation(location);
+
+				int counter = -1;
+
 				for(int j = 0; j < 9; j++){
 					if(it.GetPixel(j) != 0){
 						for(int k = 0; k < temp1.size(); k++){
 							if(temp1[k].x == it.GetIndex(j)[0] && temp1[k].y == it.GetIndex(j)[1]){
-								temp2[i].label = temp1[k].label;
-								//std::cout<<temp2[i].label<<std::endl;
+								if(counter != 0){
+									temp2[i].label = temp1[k].label;
+									counter++;
+								} else if(temp2[i].label != temp1[k].label) {
+									for(int l = 0; l < temp1.size(); l++){
+										if(temp1[l].label == temp1[k].label){
+											temp1[l].label = temp2[i].label;
+										}
+									}
+								}
 							}
 						}
 					} else {
 						zeroCounter++;
 					}
 				}
+
+				counter = -1;
+
 				if(zeroCounter == 9){
-					if(tempC != temp2[i].c){
-						temp2[i].label = labelCounter;
-						labelCounter++;
-						tempL = temp2[i].label;
-						tempC = temp2[i].c;
-					} else {
-						temp2[i].label = tempL;
-					}
-					//std::cout<<temp2[i].label<<std::endl;
+					temp2[i].label = labelCounter;
+					labelCounter++;
 					zeroCounter = 0;
+				}
+
+				if(nowC != temp2[i].c){
+					nowC = temp2[i].c;
+					nowL = temp2[i].label;
+				} else if(nowL != temp2[i].label) {
+					temp2[i].label = nowL;
 				}
 			}
 
-			points.push_back(temp2);
+			nowC = -1;
+			nowL = -1;
 
-			temp1.clear();
-			temp1.resize(temp2.size());
-			memcpy(&temp1[0], &temp2[0], temp2.size() * sizeof(APoint));
-			temp2.clear();
+			points.push_back(temp1);
+			
+			if(sliceIndex[2] == inIterator.GetRegion().GetSize()[2] - 1){
+				points.push_back(temp2);
+			} else {
+				temp1.clear();
+				temp1.resize(temp2.size());
+				memcpy(&temp1[0], &temp2[0], temp2.size() * sizeof(APoint));
+				temp2.clear();
+			}
 		}
-		
+
 		ImageType2D::Pointer itkDrawing;
 		try{
 			itkDrawing=itk::OpenCVImageBridge::CVMatToITKImage< ImageType2D >( drawing );
@@ -179,6 +197,14 @@ int main( int argc, char* argv[] ){
 		}
 		joinSeries->PushBackInput( itkDrawing );
 	}
+	
+	/*
+	for(int i = 0; i < points.size(); i++){
+		for(int j = 0; j < points[i].size(); j++){
+			std::cout<<points[i][j].label<<std::endl;
+		}
+	}
+	*/
 
 	try{
 		joinSeries->Update();
