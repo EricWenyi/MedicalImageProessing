@@ -101,8 +101,7 @@ int main( int argc, char* argv[] ){
 		Mat img = itk::OpenCVImageBridge::ITKImageToCVMat< ImageType2D >( inExtractor->GetOutput() );
 		vector<vector<Point>> contours;
 		vector<Vec4i> hierarchy;
-		RNG rng( 12345 );
-		findContours( img, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_NONE, Point(0, 0) );
+		findContours( img, contours, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_NONE, Point(0, 0) );
 
 		//初始化distance
 		float *distance = (float *)calloc( contours.size(), sizeof(float) );
@@ -110,7 +109,6 @@ int main( int argc, char* argv[] ){
 			distance[i] = 0.0f;
 		}
 
-		Scalar color = Scalar( rng.uniform( 0, 255 ) );
 		int index = 0;
 
 		//开始算法，这是适用于测试图的代码，对于原图，系数等还需调整，对于测试图，这里y轴固定，x轴起点分别为1/3 cols，2/3 cols
@@ -146,16 +144,7 @@ int main( int argc, char* argv[] ){
 		Mat drawing = Mat::zeros( img.size(), CV_8UC1 );
 		
 		//根据上面找到的序号画出左侧轮廓（此处也可用at方法画，at比较灵活，可以精确到像素点，想画几个画几个，像素值也可随意设定（不同点设置不同像素），而drawContours，只能送进去一个vector把整个vector用同一颜色画出来。。）
-		drawContours( drawing, contours, index, color, 1, 8, hierarchy, 0, Point(0, 0) );
-		//printf("%f\n", fabs(contourArea(contours[index])));
-
-		for(int i = 0; i < img.cols; i++){
-			for(int j = 0; j < img.rows; j++){
-				if(pointPolygonTest( contours[index], Point(i, j), 0 ) == 1){
-					drawing.at<uchar>(j, i) = 255;
-				}
-			}
-		}
+		drawContours( drawing, contours, index, Scalar(255), CV_FILLED, 8, hierarchy, 0, Point(0, 0) );
 
 		//下文为画右边轮廓，原理同上
 		for(int x = startX2; x > img.cols/2; x--){
@@ -182,16 +171,7 @@ int main( int argc, char* argv[] ){
 			}
 		}
 		
-		drawContours( drawing, contours, index, color, 1, 8, hierarchy, 0, Point(0, 0) );
-		//printf("%f\n", fabs(contourArea(contours[index])));
-
-		for(int i = 0; i < img.cols; i++){
-			for(int j = 0; j < img.rows; j++){
-				if(pointPolygonTest( contours[index], Point(i, j), 0 ) == 1){
-					drawing.at<uchar>(j, i) = 255;
-				}
-			}
-		}
+		drawContours( drawing, contours, index, Scalar(255), CV_FILLED, 8, hierarchy, 0, Point(0, 0) );
 
 		ImageType2D::Pointer itkDrawing;
 		try{
