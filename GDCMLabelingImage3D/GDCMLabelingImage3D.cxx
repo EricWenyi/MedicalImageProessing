@@ -102,10 +102,11 @@ int main( int argc, char* argv[] ){
 		Mat img = itk::OpenCVImageBridge::ITKImageToCVMat< ImageType2D >( inExtractor->GetOutput() );
 
 		vector<vector<Point>> contours;
-		findContours( img, contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_NONE, Point(0, 0) );
+		vector<Vec4i> hierarchy;
+		findContours( img, contours, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_NONE, Point(0, 0) );
 		
 		Mat drawing = Mat::zeros( img.size(), CV_8UC1 );
-
+		
 		if(sliceIndex[2] == 0){
 			for(int i = 0; i < contours.size(); i++){
 				for(int j = 0; j < contours[i].size(); j++){
@@ -149,6 +150,8 @@ int main( int argc, char* argv[] ){
 										}
 									}
 								}
+							} else {
+								//std::cout<<it.GetIndex(j)[0]<<" "<<it.GetIndex(j)[1]<<std::endl;
 							}
 						}
 					} else {
@@ -204,6 +207,13 @@ int main( int argc, char* argv[] ){
 			std::cout<<points[i][j].label<<std::endl;
 		}
 	}
+	*/
+	/*
+	3D特征提取：体积，表面积，平均灰度值，灰度直方图（标准差，偏度和峰度）
+	体积：计算label为X的各contour在各切片中的面积之和
+	表面积：计算label为X的各contour在各切片中的周长之和并且加上最上层和最下层的contour的面积
+	平均灰度值：将labelImage（填充了contour以后）作掩膜应用于原图，之后对contour内的点的像素值进行统计并求均值
+	灰度直方图：opencv有函数能创建灰度直方图
 	*/
 
 	try{
