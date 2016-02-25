@@ -76,8 +76,7 @@ int main( int argc, char* argv[] ){
 
 	for(inIterator.GoToBegin(); !inIterator.IsAtEnd(); inIterator.NextSlice()){
 		ImageType3D::IndexType sliceIndex = inIterator.GetIndex();
-		
-		printf("  Slice Index --- %d ---",inIterator.GetIndex());
+		printf("Slice Index --- %d ---\n", sliceIndex[2]);
 		ExtractFilterType::InputImageRegionType::SizeType sliceSize = inIterator.GetRegion().GetSize();
 		sliceSize[2] = 0;
 
@@ -105,7 +104,7 @@ int main( int argc, char* argv[] ){
 		const PixelType2D timeThreshold = atof( argv[6] );
 
 		//因为Sigmoid函数输出是0到1之间的值，故取阀值0.5
-		thresholder->SetLowerThreshold(0.5);
+		thresholder->SetLowerThreshold( 0.5 );
 		thresholder->SetUpperThreshold( timeThreshold );//timeThreshold输入为1即可
 
 		thresholder->SetOutsideValue( 0 );
