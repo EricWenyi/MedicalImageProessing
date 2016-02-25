@@ -104,7 +104,7 @@ int main( int argc, char* argv[] ){
 		vector<Vec4i> hierarchy;
 		RNG rng(12345);
 		/// Find contours
-		findContours( img, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0) );
+		findContours( img, contours, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_NONE, Point(0, 0) );
 
 
 
@@ -399,7 +399,7 @@ int main( int argc, char* argv[] ){
 		for( int i = 0; i< contours.size(); i++ )
 		{
 			Scalar color = Scalar( rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255) );
-			drawContours( drawing, contours, i, color, 2, 8, hierarchy, 0, Point() );
+			drawContours( drawing, contours, i, color, 1, 8, hierarchy, 0, Point(0, 0) );
 		}
 
 		ImageType2D::Pointer itkDrawing;

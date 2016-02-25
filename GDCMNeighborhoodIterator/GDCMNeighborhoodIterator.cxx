@@ -125,7 +125,7 @@ int main( int argc, char* argv[] ){
 
 		vector<vector<Point>> contours;
 		vector<Vec4i> hierarchy;
-		findContours( img, contours, hierarchy, CV_RETR_CCOMP, CV_CHAIN_APPROX_NONE, Point(0, 0) );
+		findContours( img, contours, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_NONE, Point(0, 0) );
 		
 		Mat drawing = Mat::zeros( img.size(), CV_8UC1 );
 		vector<Rect> boundingBox( contours.size() );
