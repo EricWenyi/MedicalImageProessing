@@ -101,7 +101,7 @@ int main( int argc, char* argv[] ){
 		Mat img = itk::OpenCVImageBridge::ITKImageToCVMat< ImageType2D >( inExtractor->GetOutput() );
 		vector<vector<Point>> contours;
 		vector<Vec4i> hierarchy;
-		findContours( img, contours, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_NONE, Point(0, 0) );
+		findContours( img, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_NONE, Point(0, 0) );
 
 		//≥ı ºªØdistance
 		float *distance = (float *)calloc( contours.size(), sizeof(float) );
