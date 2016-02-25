@@ -82,43 +82,22 @@ int main( int argc, char* argv[] ){
 		Mat img = itk::OpenCVImageBridge::ITKImageToCVMat< ImageType2D >( inExtractor->GetOutput() );
 		vector<vector<Point>> contours;
 		vector<Vec4i> hierarchy;
-		RNG rng( 12345 );
-		findContours( img, contours, hierarchy, CV_RETR_CCOMP, CV_CHAIN_APPROX_NONE, Point(0, 0) );
+		findContours( img, contours, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_NONE, Point(0, 0) );
 		
 		Mat drawing = Mat::zeros( img.size(), CV_8UC1 );
-		Scalar color = Scalar( rng.uniform( 0, 255 ) );
 		
 		vector<RotatedRect> fixedEllipse( contours.size() );//用来装fitEllipse之后的结果
-		vector<RotatedRect> ellipseBox( contours.size() );//将要用于框出椭圆
-		vector<Rect> boundingBox( contours.size() );//另有minAreaRect是找出面积最小的旋转矩形（RotatedRect）
-		Point2f vertices[4];//用来存放提取的旋转矩形端点
-		vector<int> contour_To_Delete;
 
 		for(int i = 0; i < contours.size(); i++){
-			//之前的boudingBox
-			//boundingBox[i] = boundingRect( contours[i] );
-			//rectangle(drawing, boundingBox[i].tl(), boundingBox[i].br(), color, 1, 8, 0);
-			if(contours[i].size() >= 5){//众所周知，五点二次曲线，如果轮廓的点少于5个会报错
+			if(contours[i].size() >= 5){
 				fixedEllipse[i] = fitEllipse(contours[i]);
 				//std::cout<<fixedEllipse[i].size.width<<" "<<fixedEllipse[i].size.height<<std::endl;
-				/*if (fixedEllipse[i].size.height / fixedEllipse[i].size.width > 3){
+				if(fixedEllipse[i].size.height / fixedEllipse[i].size.width > 3){
 					contours.erase(contours.begin() + i);
 					i--;
 				}
-				*/
-				//ellipse(drawing, fixedEllipse[i], color, 1, 8);//单独椭圆保存成一张图（一个Mat），然后再findContours，并找它的minAreaRect
-				//本部分是用来划contours的旋转矩形
-				//ellipseBox[i] = minAreaRect(contours[i]);
-				//提取的点保存于vertices
-				//ellipseBox[i].points(vertices);
-				//for(int i=0;i<4;i++){
-                      //line( drawing, vertices[i], vertices[(i+1)%4], color);//四个角点连成线，最终形成旋转的矩形。    
-				//}
-				
 			}
-
-
-			drawContours( drawing, contours, i, color, 1, 8, hierarchy, 0, Point(0, 0) );//划原轮廓
+			drawContours( drawing, contours, i, Scalar(255), 1, 8, hierarchy, 0, Point(0, 0) );
 		}
 		
 		ImageType2D::Pointer itkDrawing;
