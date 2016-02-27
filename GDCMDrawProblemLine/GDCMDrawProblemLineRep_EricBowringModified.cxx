@@ -45,6 +45,8 @@ void AddNewNode(int possition,int i,cv::Point &newNode);
 
 void NodeDelete(int possition,int i);
 
+int repairInsideContour(int i);
+
 
 
 int main( int argc, char* argv[] ){
@@ -248,6 +250,10 @@ int main( int argc, char* argv[] ){
 		}//end of for (int i = 0; i< contours.size(); i++)
 		printf("End of Detecting\n");
 		//TODO replace
+		/*for(int tempi=0;tempi<repairedByStatus.size();tempi++){
+			printf("(%d,%d,%d,%d,%d)",tempi,repairedByStatus[tempi].contour,repairedByStatus[tempi].status,repairedByStatus[tempi].x,repairedByStatus[tempi].y);
+		}
+		return 0;*/
 		repairContour(repairedByStatus,0);
 		printf("End of repairing\n");
 /*		
@@ -331,22 +337,40 @@ void NodeDelete(int possition,int i,int x,int y);
 
 
 int repairContour(cv::Vector<APoint> &repairedByStatus,int i){
+	int insideReturn=repairInsideContour(i);
+	if(insideReturn==0){
+		return 0;
+	}
+	int newContourBeginI=findNewContourBegin(repairedByStatus,i);
+	if(newContourBeginI==-1)
+		return 0;
+	else
+		return repairContour(repairedByStatus,newContourBeginI);//new contour
+
+}
+
+int repairInsideContour(int i){
 	int statusBegin=0;
 	printf("Reparing %d/%d repairedByStatus",i,repairedByStatus.size());
 	statusBegin=findStatusBegin(repairedByStatus,i);
 if(statusBegin==-1){
 	int newContourBeginI=findNewContourBegin(repairedByStatus,i);
-	return repairContour(repairedByStatus,newContourBeginI);//new contour
+	if(newContourBeginI==-1)
+		return 0;
+	else
+		return repairContour(repairedByStatus,newContourBeginI);//new contour
 }else if(statusBegin==-2){
 	return 0;
 }
 	int statusEnd=0;
 	statusEnd=findStatusEnd(repairedByStatus,statusBegin);
 	delAndDrawLine(repairedByStatus,repairedByStatus[i].contour,statusBegin,statusEnd);
-	int newContourBeginI=findNewContourBegin(repairedByStatus,i);
-	return repairContour(repairedByStatus,newContourBeginI);//new contour //seems problem
-
+	if(statusEnd<repairedByStatus.size()&&repairedByStatus[statusEnd].contour==repairedByStatus[statusEnd+1].contour){
+		repairInsideContour(statusEnd+1);
+	}
+	return 1;
 }
+
 
 int findStatusBegin(cv::Vector<APoint> &repairedByStatus,int i){
 	int currentContour=repairedByStatus[i].contour;
@@ -368,8 +392,11 @@ int findStatusEnd(cv::Vector<APoint> &repairedByStatus,int i){
 
 int findNewContourBegin(cv::Vector<APoint> &repairedByStatus,int i){
 	int currentContour=repairedByStatus[i].contour;
-	while(repairedByStatus[i].contour==currentContour)i++;
-	return i;
+	while(i<repairedByStatus.size()&&repairedByStatus[i].contour==currentContour)i++;
+	if(i<repairedByStatus.size())
+		return i;
+	else
+		return -1;
 }
 
 void delAndDrawLine(cv::Vector<APoint> &repairedByStatus,int i,int statusBegin,int statusEnd){
@@ -383,7 +410,7 @@ void delAndDrawLine(cv::Vector<APoint> &repairedByStatus,int i,int statusBegin,i
 	}
 	int Rx=repairedByStatus[statusEnd].x-repairedByStatus[statusBegin].x;
 	int Ry=repairedByStatus[statusEnd].y-repairedByStatus[statusBegin].y;
-	printf("=============%d,%d==========",Rx,Ry);
+	printf("=============%d,%d===(%d,%d)(%d,%d)=======",Rx,Ry,repairedByStatus[statusBegin].x,repairedByStatus[statusBegin].y,repairedByStatus[statusEnd].x,repairedByStatus[statusEnd].y);
 	//assert the node of statusEnd is known, then we have four possible related possition cases.
 	if(Rx>0&&Ry>0)
 	for(int x=1;x<=Rx;x++){
