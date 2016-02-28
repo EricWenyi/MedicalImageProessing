@@ -358,7 +358,7 @@ if(statusBegin==-1){
 	if(newContourBeginI==-1)
 		return 0;
 	else
-		return repairContour(repairedByStatus,newContourBeginI);//new contour
+		return 1;
 }else if(statusBegin==-2){
 	return 0;
 }
