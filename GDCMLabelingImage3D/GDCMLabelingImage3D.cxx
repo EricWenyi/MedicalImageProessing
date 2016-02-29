@@ -48,7 +48,7 @@ int main( int argc, char* argv[] ){
 
 	JoinSeriesFilterType::Pointer joinSeries = JoinSeriesFilterType::New();
 	joinSeries->SetOrigin( originImage3D->GetOrigin()[2] );
-	joinSeries->SetSpacing( originImage3D->GetSpacing()[2] );\
+	joinSeries->SetSpacing( originImage3D->GetSpacing()[2] );
 
 	using namespace cv;
 
