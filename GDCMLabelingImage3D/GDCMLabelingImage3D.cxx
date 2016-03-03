@@ -164,14 +164,14 @@ int main( int argc, char* argv[] ){
 					labelCounter++;
 				}
 
+				zeroCounter = 0;
+
 				if(nowC != temp2[i].c){
 					nowC = temp2[i].c;
 					nowL = temp2[i].label;
 				} else if(nowL != temp2[i].label) {
 					temp2[i].label = nowL;
 				}
-
-				zeroCounter = 0;
 			}
 
 			nowC = -1;
