@@ -106,7 +106,7 @@ int main( int argc, char* argv[] ){
 		findContours( img, contours, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_NONE, Point(0, 0) );
 		
 		Mat drawing = Mat::zeros( img.size(), CV_8UC1 );
-		
+
 		if(sliceIndex[2] == 0){
 			for(int i = 0; i < contours.size(); i++){
 				for(int j = 0; j < contours[i].size(); j++){
@@ -150,8 +150,6 @@ int main( int argc, char* argv[] ){
 										}
 									}
 								}
-							} else {
-								//std::cout<<it.GetIndex(j)[0]<<" "<<it.GetIndex(j)[1]<<std::endl;
 							}
 						}
 					} else {
@@ -164,7 +162,6 @@ int main( int argc, char* argv[] ){
 				if(zeroCounter == 9){
 					temp2[i].label = labelCounter;
 					labelCounter++;
-					zeroCounter = 0;
 				}
 
 				if(nowC != temp2[i].c){
@@ -173,6 +170,8 @@ int main( int argc, char* argv[] ){
 				} else if(nowL != temp2[i].label) {
 					temp2[i].label = nowL;
 				}
+
+				zeroCounter = 0;
 			}
 
 			nowC = -1;
@@ -200,21 +199,12 @@ int main( int argc, char* argv[] ){
 		}
 		joinSeries->PushBackInput( itkDrawing );
 	}
-	
-	/*
+
 	for(int i = 0; i < points.size(); i++){
 		for(int j = 0; j < points[i].size(); j++){
 			std::cout<<points[i][j].label<<std::endl;
 		}
 	}
-	*/
-	/*
-	3D特征提取：体积，表面积，平均灰度值，灰度直方图（标准差，偏度和峰度）
-	体积：计算label为X的各contour在各切片中的面积之和
-	表面积：计算label为X的各contour在各切片中的周长之和并且加上最上层和最下层的contour的面积
-	平均灰度值：将labelImage（填充了contour以后）作掩膜应用于原图，之后对contour内的点的像素值进行统计并求均值
-	灰度直方图：opencv有函数能创建灰度直方图
-	*/
 
 	try{
 		joinSeries->Update();
