@@ -51,7 +51,7 @@ int main( int argc, char* argv[] ){
 	joinSeries->SetSpacing( originImage3D->GetSpacing()[2] );
 
 	int tempInCounter = 1;
-	double size = 100.0f;
+	double perimeter = 100.0f;
 	double area = 1000.0f;
 
 	int startX1 = 200;
@@ -75,7 +75,7 @@ int main( int argc, char* argv[] ){
 			startX2 = 400;
 			startY1 = 256;
 			startY2 = 256;
-			size = 600.0f;
+			perimeter = 600.0f;
 			area = 10000.0f;
 		}
 
@@ -103,12 +103,6 @@ int main( int argc, char* argv[] ){
 		vector<Vec4i> hierarchy;
 		findContours( img, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_NONE, Point(0, 0) );
 
-		//初始化distance
-		float *distance = (float *)calloc( contours.size(), sizeof(float) );
-		for (int i = 0; i < contours.size(); i++){
-			distance[i] = 0.0f;
-		}
-
 		int index = 0;
 
 		//开始算法，这是适用于测试图的代码，对于原图，系数等还需调整，对于测试图，这里y轴固定，x轴起点分别为1/3 cols，2/3 cols
@@ -122,20 +116,13 @@ int main( int argc, char* argv[] ){
 					for(int j = 0; j < contours[i].size() - 1; j++){
 						//如果坐标相同，则计算所在的contours的周长，并记录序号index
 						if(contours[i][j].x == x && contours[i][j].y == startY1){
-							for(int k = 0; k < contours[i].size() - 1; k++){
-								if((contours[i][k+1].x != contours[i][k].x) && (contours[i][k+1].y != contours[i][k].y)){ 
-									distance[i] += 1.4142135f;
-								} else {
-									distance[i] += 1.0f;
-								}
-							}
 							index = i;
 						}
 					}
 				}
 			}
 			//若该contours周长大于给定的值并且面积大于给定的值（适用于本测试图，原图的话需要分区设定不同的值），则退出大循环，开始画轮廓
-			if( distance[index] > size && fabs(contourArea(contours[index])) > area ){
+			if( arcLength(contours[index], true) > perimeter && fabs(contourArea(contours[index])) > area ){
 				break;
 			}
 		}
@@ -154,19 +141,12 @@ int main( int argc, char* argv[] ){
 				for (int i = 0; i < contours.size(); i++){
 					for(int j = 0; j < contours[i].size() - 1; j++){
 						if(contours[i][j].x == x && contours[i][j].y == startY2){
-							for(int k = 0; k < contours[i].size() - 1; k++){
-								if((contours[i][k+1].x != contours[i][k].x) && (contours[i][k+1].y != contours[i][k].y)){ 
-									distance[i] += 1.4142135f;
-								} else {
-									distance[i] += 1.0f;
-								}
-							}
 							index = i;
 						}
 					}
 				}
 			}
-			if( distance[index] > size && fabs(contourArea(contours[index])) > area ){
+			if( arcLength(contours[index], true) > perimeter && fabs(contourArea(contours[index])) > area ){
 				break;
 			}
 		}

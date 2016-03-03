@@ -6,7 +6,7 @@ endif()
 
 
 # This project is designed to be built outside the Insight source tree.
-project(GDCMNeighborhoodIterator)
+project(GDCMFPReduction)
 
 # Find ITK.
 find_package(ITK REQUIRED)
@@ -14,6 +14,6 @@ include(${ITK_USE_FILE})
 find_package( OpenCV REQUIRED )
 include_directories( ${OpenCV_INCLUDE_DIRS} )
 
-add_executable( GDCMNeighborhoodIterator GDCMNeighborhoodIterator.cxx )
+add_executable( GDCMFPReduction GDCMFPReduction.cxx )
 
-target_link_libraries(GDCMNeighborhoodIterator ${ITK_LIBRARIES} ${OpenCV_LIBS})
+target_link_libraries(GDCMFPReduction ${ITK_LIBRARIES} ${OpenCV_LIBS})

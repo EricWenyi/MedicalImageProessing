@@ -62,6 +62,20 @@ int main( int argc, char* argv[] ){
 	vector<APoint> temp1;
 	vector<APoint> temp2;
 	vector<vector<APoint>> points;
+	vector<int> labelToRemain;
+
+	struct AContour{
+		int n;
+		int label;
+		double circularity;
+		double ratioOfAxes;
+		double ratioOfArea;
+		int x;
+		int y;
+	};
+	AContour acontour;
+	vector<AContour> temp;
+	vector<vector<AContour>> contour;
 
 	int labelCounter = 0;
 	int zeroCounter = 0;
@@ -109,6 +123,21 @@ int main( int argc, char* argv[] ){
 
 		if(sliceIndex[2] == 0){
 			for(int i = 0; i < contours.size(); i++){
+				acontour.n = i;
+				acontour.label = labelCounter;
+				acontour.circularity = 4 * 3.1415926 * contourArea(contours[i]) / arcLength(contours[i], true) / arcLength(contours[i], true);
+
+				if(contours[i].size() < 5){
+					acontour.ratioOfAxes = 3.1;
+				} else {
+					acontour.ratioOfAxes = fitEllipse(contours[i]).size.height / fitEllipse(contours[i]).size.width;
+				}
+
+				acontour.ratioOfArea = contourArea(contours[i]) / minAreaRect(contours[i]).size.area();
+				acontour.x = boundingRect(contours[i]).height;
+				acontour.y = boundingRect(contours[i]).width;
+				temp.push_back(acontour);
+
 				for(int j = 0; j < contours[i].size(); j++){
 					apoint.c = i;
 					apoint.x = contours[i][j].x;
@@ -120,6 +149,21 @@ int main( int argc, char* argv[] ){
 			}
 		} else {
 			for(int i = 0; i < contours.size(); i++){
+				acontour.n = i;
+				acontour.label = -1;
+				acontour.circularity = 4 * 3.1415926 * contourArea(contours[i]) / arcLength(contours[i], true) / arcLength(contours[i], true);
+
+				if(contours[i].size() < 5){
+					acontour.ratioOfAxes = 3.1;
+				} else {
+					acontour.ratioOfAxes = fitEllipse(contours[i]).size.height / fitEllipse(contours[i]).size.width;
+				}
+				
+				acontour.ratioOfArea = contourArea(contours[i]) / minAreaRect(contours[i]).size.area();
+				acontour.x = boundingRect(contours[i]).height;
+				acontour.y = boundingRect(contours[i]).width;
+				temp.push_back(acontour);
+
 				for(int j = 0; j < contours[i].size(); j++){
 					apoint.c = i;
 					apoint.x = contours[i][j].x;
@@ -169,6 +213,11 @@ int main( int argc, char* argv[] ){
 				if(nowC != temp2[i].c){
 					nowC = temp2[i].c;
 					nowL = temp2[i].label;
+					for(int j = 0; j < temp.size(); j++){
+						if(temp[j].n == nowC){
+							temp[j].label = nowL;
+						}
+					}
 				} else if(nowL != temp2[i].label) {
 					temp2[i].label = nowL;
 				}
@@ -178,14 +227,17 @@ int main( int argc, char* argv[] ){
 			nowL = -1;
 
 			points.push_back(temp1);
+			contour.push_back(temp);
 			
 			if(sliceIndex[2] == inIterator.GetRegion().GetSize()[2] - 1){
 				points.push_back(temp2);
+				contour.push_back(temp);
 			} else {
 				temp1.clear();
 				temp1.resize(temp2.size());
 				memcpy(&temp1[0], &temp2[0], temp2.size() * sizeof(APoint));
 				temp2.clear();
+				temp.clear();
 			}
 		}
 
@@ -200,11 +252,50 @@ int main( int argc, char* argv[] ){
 		joinSeries->PushBackInput( itkDrawing );
 	}
 
-	for(int i = 0; i < points.size(); i++){
-		for(int j = 0; j < points[i].size(); j++){
-			std::cout<<points[i][j].label<<std::endl;
+	struct AnObject{
+		int label;
+		int z;
+		int mC;//maximum circularity
+	};
+	AnObject anobject;
+	vector<AnObject> objects;
+
+	for(int i = 0; i < contour.size(); i++){
+		if(i == 0){
+			for(int j = 0; j < contour[i].size(); j++){
+				anobject.label = contour[i][j].label;
+				anobject.z = 1;
+				anobject.mC = -1;
+				objects.push_back(anobject);
+			}
+		} else {
+			int tempCounter = 0;
+			for(int j = 0; j < contour[i].size(); j++){
+				for(int k = 0; k < objects.size(); k++){
+					if(contour[i][j].label == objects[k].label){
+						objects[k].z++;
+						if(contour[i][j].circularity > objects[k].mC){
+							objects[k].mC = contour[i][j].circularity;
+						}
+					} else {
+						tempCounter++;
+					}
+				}
+
+				if(tempCounter == objects.size()){
+					anobject.label = contour[i][j].label;
+					anobject.z = 1;
+					anobject.mC = -1;
+					objects.push_back(anobject);
+				}
+
+				tempCounter = 0;
+			}
 		}
 	}
+
+	vector<int> remain1, remain2, remain3, remain4;
+	//TODO
 
 	try{
 		joinSeries->Update();
