@@ -125,10 +125,10 @@ int main( int argc, char* argv[] ){
 			for(int i = 0; i < contours.size(); i++){
 				acontour.n = i;
 				acontour.label = labelCounter;
-				acontour.circularity = 4 * 3.1415926 * contourArea(contours[i]) / arcLength(contours[i], true) / arcLength(contours[i], true);
+				acontour.circularity = 4 * 3.1415926f * contourArea(contours[i]) / arcLength(contours[i], true) / arcLength(contours[i], true);
 
 				if(contours[i].size() < 5){
-					acontour.ratioOfAxes = 3.1;
+					acontour.ratioOfAxes = 3.1f;
 				} else {
 					acontour.ratioOfAxes = fitEllipse(contours[i]).size.height / fitEllipse(contours[i]).size.width;
 				}
@@ -151,10 +151,10 @@ int main( int argc, char* argv[] ){
 			for(int i = 0; i < contours.size(); i++){
 				acontour.n = i;
 				acontour.label = -1;
-				acontour.circularity = 4 * 3.1415926 * contourArea(contours[i]) / arcLength(contours[i], true) / arcLength(contours[i], true);
+				acontour.circularity = 4 * 3.1415926f * contourArea(contours[i]) / arcLength(contours[i], true) / arcLength(contours[i], true);
 
 				if(contours[i].size() < 5){
-					acontour.ratioOfAxes = 3.1;
+					acontour.ratioOfAxes = 3.1f;
 				} else {
 					acontour.ratioOfAxes = fitEllipse(contours[i]).size.height / fitEllipse(contours[i]).size.width;
 				}
@@ -256,9 +256,11 @@ int main( int argc, char* argv[] ){
 		int label;
 		int z;
 		int mC;//maximum circularity
+		vector<AContour> contour;
 	};
 	AnObject anobject;
 	vector<AnObject> objects;
+	int tempCounter = 0;
 
 	for(int i = 0; i < contour.size(); i++){
 		if(i == 0){
@@ -266,14 +268,15 @@ int main( int argc, char* argv[] ){
 				anobject.label = contour[i][j].label;
 				anobject.z = 1;
 				anobject.mC = -1;
+				anobject.contour.push_back(contour[i][j]);
 				objects.push_back(anobject);
 			}
 		} else {
-			int tempCounter = 0;
 			for(int j = 0; j < contour[i].size(); j++){
 				for(int k = 0; k < objects.size(); k++){
 					if(contour[i][j].label == objects[k].label){
 						objects[k].z++;
+						anobject.contour.push_back(contour[i][j]);
 						if(contour[i][j].circularity > objects[k].mC){
 							objects[k].mC = contour[i][j].circularity;
 						}
@@ -286,6 +289,7 @@ int main( int argc, char* argv[] ){
 					anobject.label = contour[i][j].label;
 					anobject.z = 1;
 					anobject.mC = -1;
+					anobject.contour.push_back(contour[i][j]);
 					objects.push_back(anobject);
 				}
 
@@ -293,9 +297,64 @@ int main( int argc, char* argv[] ){
 			}
 		}
 	}
-
+	
 	vector<int> remain1, remain2, remain3, remain4;
-	//TODO
+	
+	for(int i = 0; i < objects.size(); i++){
+		if(objects[i].z >= 3){
+			for(int j = 0; j < objects[i].contour.size(); j++){
+				if(objects[i].contour[j].x >= 3 && objects[i].contour[j].y >= 3){
+					remain1.push_back(objects[i].label);
+				}
+			}
+		}
+	}
+
+	for(int i = 0; i < objects.size(); i++){
+		if(objects[i].mC > 0.2f){
+			for(int j = 0; j < remain1.size(); j++){
+				if(objects[i].label == remain1[j]){
+					remain2.push_back(objects[i].label);
+				}
+			}
+		}
+	}
+
+	for(int i = 0; i < objects.size(); i++){
+		for(int j = 0; j < objects[i].contour.size(); j++){
+			if(objects[i].contour[j].ratioOfArea <= 2.0f){
+				tempCounter++;
+			}
+		}
+		
+		if(tempCounter == objects[i].contour.size()){
+			for(int j = 0; j < remain2.size(); j++){
+				if(objects[i].label == remain2[j]){
+					remain3.push_back(objects[i].label);
+				}
+			}
+		}
+		
+		tempCounter = 0;
+	}
+	
+	for(int i = 0; i < objects.size(); i++){
+		for(int j = 0; j < objects[i].contour.size(); j++){
+			if(objects[i].contour[j].ratioOfAxes <= 3.0f){
+				tempCounter++;
+			}
+		}
+		
+		if(tempCounter == objects[i].contour.size()){
+			for(int j = 0; j < remain3.size(); j++){
+				if(objects[i].label == remain3[j]){
+					remain4.push_back(objects[i].label);
+				}
+			}
+		}
+		
+		tempCounter = 0;
+	}
 
 	try{
 		joinSeries->Update();
