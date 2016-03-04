@@ -72,6 +72,7 @@ int main( int argc, char* argv[] ){
 		double ratioOfArea;
 		int x;
 		int y;
+		vector<Point> point;
 	};
 	AContour acontour;
 	vector<AContour> temp;
@@ -136,7 +137,6 @@ int main( int argc, char* argv[] ){
 				acontour.ratioOfArea = contourArea(contours[i]) / minAreaRect(contours[i]).size.area();
 				acontour.x = boundingRect(contours[i]).height;
 				acontour.y = boundingRect(contours[i]).width;
-				temp.push_back(acontour);
 
 				for(int j = 0; j < contours[i].size(); j++){
 					apoint.c = i;
@@ -144,8 +144,11 @@ int main( int argc, char* argv[] ){
 					apoint.y = contours[i][j].y;
 					apoint.label = labelCounter;
 					temp1.push_back(apoint);
+					acontour.point.push_back(contours[i][j]);
 				}
+
 				labelCounter++;
+				temp.push_back(acontour);
 			}
 		} else {
 			for(int i = 0; i < contours.size(); i++){
@@ -162,7 +165,6 @@ int main( int argc, char* argv[] ){
 				acontour.ratioOfArea = contourArea(contours[i]) / minAreaRect(contours[i]).size.area();
 				acontour.x = boundingRect(contours[i]).height;
 				acontour.y = boundingRect(contours[i]).width;
-				temp.push_back(acontour);
 
 				for(int j = 0; j < contours[i].size(); j++){
 					apoint.c = i;
@@ -170,7 +172,10 @@ int main( int argc, char* argv[] ){
 					apoint.y = contours[i][j].y;
 					apoint.label = -1;
 					temp2.push_back(apoint);
+					acontour.point.push_back(contours[i][j]);
 				}
+
+				temp.push_back(acontour);
 			}
 	
 			for(int i = 0; i < temp2.size(); i++){
