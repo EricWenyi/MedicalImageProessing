@@ -65,14 +65,14 @@ int main( int argc, char* argv[] ){
 	vector<int> labelToRemain;
 
 	struct AContour{
-		int n;
+		int n;//contour的序号，后为contour标记label时会用到
 		int label;
-		double circularity;
-		double ratioOfAxes;
-		double ratioOfArea;
-		int x;
-		int y;
-		vector<Point> point;
+		double circularity;//每一个contour的圆度
+		double ratioOfAxes;//fitEllipse的长宽比
+		double ratioOfArea;//minAreaRect与contourArea的比值
+		int x;//boundingRect的长
+		int y;//boundingRect的宽
+		vector<Point> point;//将属于同一contour的点都推进去
 	};
 	AContour acontour;
 	vector<AContour> temp;
@@ -127,14 +127,14 @@ int main( int argc, char* argv[] ){
 				acontour.n = i;
 				acontour.label = labelCounter;
 				acontour.circularity = 4 * 3.1415926f * contourArea(contours[i]) / arcLength(contours[i], true) / arcLength(contours[i], true);
-
+				//contour内的点不足5个时fitEllipse无法使用
 				if(contours[i].size() < 5){
 					acontour.ratioOfAxes = 3.1f;
 				} else {
 					acontour.ratioOfAxes = fitEllipse(contours[i]).size.height / fitEllipse(contours[i]).size.width;
 				}
 
-				acontour.ratioOfArea = contourArea(contours[i]) / minAreaRect(contours[i]).size.area();
+				acontour.ratioOfArea = minAreaRect(contours[i]).size.area() / contourArea(contours[i]);
 				acontour.x = boundingRect(contours[i]).height;
 				acontour.y = boundingRect(contours[i]).width;
 
@@ -144,7 +144,7 @@ int main( int argc, char* argv[] ){
 					apoint.y = contours[i][j].y;
 					apoint.label = labelCounter;
 					temp1.push_back(apoint);
-					acontour.point.push_back(contours[i][j]);
+					acontour.point.push_back(contours[i][j]);//将当前contour内的全部点保存于结构体中
 				}
 
 				labelCounter++;
@@ -155,14 +155,14 @@ int main( int argc, char* argv[] ){
 				acontour.n = i;
 				acontour.label = -1;
 				acontour.circularity = 4 * 3.1415926f * contourArea(contours[i]) / arcLength(contours[i], true) / arcLength(contours[i], true);
-
+				//同上
 				if(contours[i].size() < 5){
 					acontour.ratioOfAxes = 3.1f;
 				} else {
 					acontour.ratioOfAxes = fitEllipse(contours[i]).size.height / fitEllipse(contours[i]).size.width;
 				}
 				
-				acontour.ratioOfArea = contourArea(contours[i]) / minAreaRect(contours[i]).size.area();
+				acontour.ratioOfArea = minAreaRect(contours[i]).size.area() / contourArea(contours[i]);
 				acontour.x = boundingRect(contours[i]).height;
 				acontour.y = boundingRect(contours[i]).width;
 
@@ -172,7 +172,7 @@ int main( int argc, char* argv[] ){
 					apoint.y = contours[i][j].y;
 					apoint.label = -1;
 					temp2.push_back(apoint);
-					acontour.point.push_back(contours[i][j]);
+					acontour.point.push_back(contours[i][j]);//同上
 				}
 
 				temp.push_back(acontour);
@@ -259,9 +259,9 @@ int main( int argc, char* argv[] ){
 
 	struct AnObject{
 		int label;
-		int z;
-		int mC;//maximum circularity
-		vector<AContour> contour;
+		int z;//3D物体Z轴大小
+		int mC;//3D物体的最大圆度
+		vector<AContour> contour;//将属于同一物体的contour推进去
 	};
 	AnObject anobject;
 	vector<AnObject> objects;
@@ -302,28 +302,41 @@ int main( int argc, char* argv[] ){
 			}
 		}
 	}
-	
+
+	std::cout<<objects.size()<<std::endl;
+
+	//4个remain分别为4次reduction的结果，层层递进的，下一个remain一定是前面的子集
 	vector<int> remain1, remain2, remain3, remain4;
 	
 	for(int i = 0; i < objects.size(); i++){
 		if(objects[i].z >= 3){
 			for(int j = 0; j < objects[i].contour.size(); j++){
 				if(objects[i].contour[j].x >= 3 && objects[i].contour[j].y >= 3){
-					remain1.push_back(objects[i].label);
+					if(nowL != objects[i].label){
+						remain1.push_back(objects[i].label);
+						nowL = objects[i].label;
+					}
 				}
 			}
 		}
 	}
 
+	nowL = -1;
+
 	for(int i = 0; i < objects.size(); i++){
 		if(objects[i].mC > 0.2f){
 			for(int j = 0; j < remain1.size(); j++){
 				if(objects[i].label == remain1[j]){
-					remain2.push_back(objects[i].label);
+					if(nowL != objects[i].label){
+						remain2.push_back(objects[i].label);
+						nowL = objects[i].label;
+					}
 				}
 			}
 		}
 	}
+
+	nowL = -1;
 
 	for(int i = 0; i < objects.size(); i++){
 		for(int j = 0; j < objects[i].contour.size(); j++){
@@ -360,6 +373,11 @@ int main( int argc, char* argv[] ){
 		
 		tempCounter = 0;
 	}
+
+	std::cout<<remain1.size()<<std::endl;
+	std::cout<<remain2.size()<<std::endl;
+	std::cout<<remain3.size()<<std::endl;
+	std::cout<<remain4.size()<<std::endl;
 
 	try{
 		joinSeries->Update();
