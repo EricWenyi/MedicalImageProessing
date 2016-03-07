@@ -132,8 +132,8 @@ int main( int argc, char* argv[] ){
 				acontour.perimeter = arcLength(contours[i], true);
 				//contour内的点不足5个时fitEllipse无法使用
 				if(contours[i].size() < 5){
-					acontour.a = 3.1f;
-					acontour.b = 1.0f;
+					acontour.a = -2.9f;
+					acontour.b = -1.0f;
 				} else {
 					acontour.a = fitEllipse(contours[i]).size.height;
 					acontour.b = fitEllipse(contours[i]).size.width;
@@ -163,8 +163,8 @@ int main( int argc, char* argv[] ){
 				acontour.perimeter = arcLength(contours[i], true);
 				
 				if(contours[i].size() < 5){
-					acontour.a = 3.1f;
-					acontour.b = 1.0f;
+					acontour.a = -2.9f;
+					acontour.b = -1.0f;
 				} else {
 					acontour.a = fitEllipse(contours[i]).size.height;
 					acontour.b = fitEllipse(contours[i]).size.width;
@@ -315,7 +315,7 @@ int main( int argc, char* argv[] ){
 
 	//4个remain分别为4次reduction的结果，层层递进的，下一个remain一定是前面的子集
 	vector<int> remain1, remain2, remain3, remain4;
-	
+
 	for(int i = 0; i < objects.size(); i++){
 		if(objects[i].z >= 3){
 			for(int j = 0; j < objects[i].contour.size(); j++){
@@ -386,6 +386,69 @@ int main( int argc, char* argv[] ){
 	std::cout<<remain2.size()<<std::endl;
 	std::cout<<remain3.size()<<std::endl;
 	std::cout<<remain4.size()<<std::endl;
+
+	//2D特征提取，以下皆为各变量的最大值
+	vector<double> area, perimeter, circularity, a, b, eccentricity;
+	double max = -1.0f;
+
+	for(int i = 0; i < remain4.size(); i++){
+		for(int j = 0; j < objects[remain4[i]].contour.size(); j++){
+			if(objects[remain4[i]].contour[j].area > max){
+				max = objects[remain4[i]].contour[j].area;
+			}
+		}
+		area.push_back(max);
+	}
+
+	max = -1;
+
+	for(int i = 0; i < remain4.size(); i++){
+		for(int j = 0; j < objects[remain4[i]].contour.size(); j++){
+			if(objects[remain4[i]].contour[j].perimeter > max){
+				max = objects[remain4[i]].contour[j].perimeter;
+			}
+		}
+		perimeter.push_back(max);
+	}
+
+	for(int i = 0; i < remain4.size(); i++){
+		circularity.push_back(objects[remain4[i]].mC);
+	}
+
+	max = -1;
+
+	for(int i = 0; i < remain4.size(); i++){
+		for(int j = 0; j < objects[remain4[i]].contour.size(); j++){
+			if(objects[remain4[i]].contour[j].a > max){
+				max = objects[remain4[i]].contour[j].a;
+			}
+		}
+		a.push_back(max);
+	}
+
+	max = -1;
+
+	for(int i = 0; i < remain4.size(); i++){
+		for(int j = 0; j < objects[remain4[i]].contour.size(); j++){
+			if(objects[remain4[i]].contour[j].b > max){
+				max = objects[remain4[i]].contour[j].b;
+			}
+		}
+		b.push_back(max);
+	}
+
+	max = -1;
+
+	for(int i = 0; i < remain4.size(); i++){
+		for(int j = 0; j < objects[remain4[i]].contour.size(); j++){
+			if(sqrt(1 - (objects[remain4[i]].contour[j].b * objects[remain4[i]].contour[j].b / objects[remain4[i]].contour[j].a / objects[remain4[i]].contour[j].a)) > max){
+				max = sqrt(1 - (objects[remain4[i]].contour[j].b * objects[remain4[i]].contour[j].b / objects[remain4[i]].contour[j].a / objects[remain4[i]].contour[j].a));
+			}
+		}
+		eccentricity.push_back(max);
+	}
+
+	max = -1;
 
 	try{
 		joinSeries->Update();
