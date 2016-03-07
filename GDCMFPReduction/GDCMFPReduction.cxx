@@ -67,9 +67,11 @@ int main( int argc, char* argv[] ){
 	struct AContour{
 		int n;//contour的序号，后为contour标记label时会用到
 		int label;
-		double circularity;//每一个contour的圆度
-		double ratioOfAxes;//fitEllipse的长宽比
-		double ratioOfArea;//minAreaRect与contourArea的比值
+		double area;
+		double perimeter;
+		double boundingArea;//minAreaRect的面积
+		double a;//fitEllipse的长
+		double b;//fitEllipse的宽
 		int x;//boundingRect的长
 		int y;//boundingRect的宽
 		vector<Point> point;//将属于同一contour的点都推进去
@@ -126,15 +128,18 @@ int main( int argc, char* argv[] ){
 			for(int i = 0; i < contours.size(); i++){
 				acontour.n = i;
 				acontour.label = labelCounter;
-				acontour.circularity = 4 * 3.1415926f * contourArea(contours[i]) / arcLength(contours[i], true) / arcLength(contours[i], true);
+				acontour.area = contourArea(contours[i]);
+				acontour.perimeter = arcLength(contours[i], true);
 				//contour内的点不足5个时fitEllipse无法使用
 				if(contours[i].size() < 5){
-					acontour.ratioOfAxes = 3.1f;
+					acontour.a = 3.1f;
+					acontour.b = 1.0f;
 				} else {
-					acontour.ratioOfAxes = fitEllipse(contours[i]).size.height / fitEllipse(contours[i]).size.width;
+					acontour.a = fitEllipse(contours[i]).size.height;
+					acontour.b = fitEllipse(contours[i]).size.width;
 				}
 
-				acontour.ratioOfArea = minAreaRect(contours[i]).size.area() / contourArea(contours[i]);
+				acontour.boundingArea = minAreaRect(contours[i]).size.area();
 				acontour.x = boundingRect(contours[i]).height;
 				acontour.y = boundingRect(contours[i]).width;
 
@@ -154,15 +159,18 @@ int main( int argc, char* argv[] ){
 			for(int i = 0; i < contours.size(); i++){
 				acontour.n = i;
 				acontour.label = -1;
-				acontour.circularity = 4 * 3.1415926f * contourArea(contours[i]) / arcLength(contours[i], true) / arcLength(contours[i], true);
-				//同上
+				acontour.area = contourArea(contours[i]);
+				acontour.perimeter = arcLength(contours[i], true);
+				
 				if(contours[i].size() < 5){
-					acontour.ratioOfAxes = 3.1f;
+					acontour.a = 3.1f;
+					acontour.b = 1.0f;
 				} else {
-					acontour.ratioOfAxes = fitEllipse(contours[i]).size.height / fitEllipse(contours[i]).size.width;
+					acontour.a = fitEllipse(contours[i]).size.height;
+					acontour.b = fitEllipse(contours[i]).size.width;
 				}
 				
-				acontour.ratioOfArea = minAreaRect(contours[i]).size.area() / contourArea(contours[i]);
+				acontour.boundingArea = minAreaRect(contours[i]).size.area();
 				acontour.x = boundingRect(contours[i]).height;
 				acontour.y = boundingRect(contours[i]).width;
 
@@ -172,7 +180,7 @@ int main( int argc, char* argv[] ){
 					apoint.y = contours[i][j].y;
 					apoint.label = -1;
 					temp2.push_back(apoint);
-					acontour.point.push_back(contours[i][j]);//同上
+					acontour.point.push_back(contours[i][j]);
 				}
 
 				temp.push_back(acontour);
@@ -282,8 +290,8 @@ int main( int argc, char* argv[] ){
 					if(contour[i][j].label == objects[k].label){
 						objects[k].z++;
 						anobject.contour.push_back(contour[i][j]);
-						if(contour[i][j].circularity > objects[k].mC){
-							objects[k].mC = contour[i][j].circularity;
+						if(4 * 3.1415926f * contour[i][j].area / contour[i][j].perimeter / contour[i][j].perimeter > objects[k].mC){
+							objects[k].mC = 4 * 3.1415926f * contour[i][j].area / contour[i][j].perimeter / contour[i][j].perimeter;
 						}
 					} else {
 						tempCounter++;
@@ -340,7 +348,7 @@ int main( int argc, char* argv[] ){
 
 	for(int i = 0; i < objects.size(); i++){
 		for(int j = 0; j < objects[i].contour.size(); j++){
-			if(objects[i].contour[j].ratioOfArea <= 2.0f){
+			if(objects[i].contour[j].boundingArea / objects[i].contour[j].area <= 2.0f){
 				tempCounter++;
 			}
 		}
@@ -358,7 +366,7 @@ int main( int argc, char* argv[] ){
 	
 	for(int i = 0; i < objects.size(); i++){
 		for(int j = 0; j < objects[i].contour.size(); j++){
-			if(objects[i].contour[j].ratioOfAxes <= 3.0f){
+			if(objects[i].contour[j].a / objects[i].contour[j].b <= 3.0f){
 				tempCounter++;
 			}
 		}
