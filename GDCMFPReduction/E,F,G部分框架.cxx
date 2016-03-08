@@ -13,10 +13,10 @@ Part E:
 	};
 
 	vector<vector<Acontour>> Contours;//第一层：所在的slice 第二层：contour对应的序号（不要与原来的openCV里的contours变量搞混）
-	vector<AnObject> Objects； //推进去的Objects应当按照Label排序
+	vector<AnObject> Objects； //推进去的Objects应当按照Label排5序
 
 	//注意 Feature使用vector<AnObject> Objects 作为参数，计算出的数据应该是vector<vector<>>结构(对每一个contour都要求的feature) 
-	//或者是 vector<>结构（只要求一个nodule中最大值） 
+	//或者是 vector<>结构（只要求一个nodule中最大值）
 	//对于vector<vector<>>结构， 第一层的序号是label，第二层的序号是张数的序号
 	//对于vector<>结构，序号就是label
 
@@ -56,16 +56,38 @@ Part E:
 //F部分：
 
 
-	void Volume_Calculation_3D(Objects, Contour_Area, vector<> Object_Volumn){
-		//计算Volume，放入相应的vector
+	void Volume_Calculation_3D(Objects, Contour_Area, vector<double> Object_Volumn, vector<int> Object_Voxel_Number){
+		//计算Volume以及每个nodule对应的voxel个数，放入相应的vector
+		double volume = 0.0;
+		int Voxel_Number = 0;
+		for(int i = 0; i < Objects.size(); i++){
+			for(int j = 0; j < Objects[i].size(); j++){
+				volume += Contour_Area[i][j] * slice_width;     //Area 需要再乘上每一张slice之间的距离才是体积
+				Voxel_Number += Contour_Area[i][j] / pixel_area; //Area 除以像素点面积就是每一个contour所包含的像素点
+			}
+			Object_Volumn.push_back(volume);
+			Object_Voxel_Number.push_back(Voxel_Number);
+
+		}
 	}
 
 	void SurfaceArea_Calculation_3D(Objects, Contour_Area, Contour_Perimeter, vector<> Object_SurfaceArea){
-		//计算Surface Area
+		double SurfaceArea = 0.0;
+
+		for(int i = 0; i < Objects.size(); i++){
+			for(int j = 0; j < Objects[i].Object_Contours.size(); j++){
+				if(j = 0 || j = Objects[i].Object_Contours.size() - 1)
+					SurfaceArea += Contour_Area[i][j] * slice_width;
+				else
+					SurfaceArea += Contour_Perimeter[i][j] * slice_width;
+
+			}
+		}
 	}
 
-	void GreyValue_Calculation_3d(Objects, ){
-		//??????Grey Value怎么算 SSK怎么算 想一想
+	void GreyValue_Calculation_3d(Objects, vector<vector<>> Object_GrayValue){
+		
+
 	}
 
 	void Eccentricity_Calculation(Objects, ){
