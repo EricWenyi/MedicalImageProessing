@@ -121,8 +121,6 @@ int main( int argc, char* argv[] ){
 		vector<vector<Point>> contours;
 		vector<Vec4i> hierarchy;
 		findContours( img, contours, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_NONE, Point(0, 0) );
-		
-		Mat drawing = Mat::zeros( img.size(), CV_8UC1 );
 
 		if(sliceIndex[2] == 0){
 			for(int i = 0; i < contours.size(); i++){
@@ -253,16 +251,6 @@ int main( int argc, char* argv[] ){
 				temp.clear();
 			}
 		}
-
-		ImageType2D::Pointer itkDrawing;
-		try{
-			itkDrawing=itk::OpenCVImageBridge::CVMatToITKImage< ImageType2D >( drawing );
-		} catch (itk::ExceptionObject &excp){
-			std::cerr << "Exception: CVMatToITKImage failure !" << std::endl;
-			std::cerr << excp << std::endl;
-			return EXIT_FAILURE;
-		}
-		joinSeries->PushBackInput( itkDrawing );
 	}
 
 	struct AnObject{
@@ -313,16 +301,23 @@ int main( int argc, char* argv[] ){
 
 	std::cout<<objects.size()<<std::endl;
 
+	//之后label没有用了，直接用vector下标
+
 	//4个remain分别为4次reduction的结果，层层递进的，下一个remain一定是前面的子集
 	vector<int> remain1, remain2, remain3, remain4;
-
+	/*
+	reduction1 判断object的Z轴是否大于等于3，在大于等于3的前提下，只要有object中某一个contour合格（X和Y都大于等于3），则该object合格
+	reduction2 判断object中各contour中最大的那个圆度，大于0.2则认为该object合格
+	reduction3 判断object中各contour的boundingArea（最小面积包围的旋转矩形）与contourArea的比值，确保每一个contour此比值小于等于2则该object合格
+	reduction4 判断object中各contour的fitEllipse（其结果是一个旋转矩形）的长短轴（即该旋转举行长宽）的比值，确保每一个contour此比值小于等于3则该contour合格
+	*/
 	for(int i = 0; i < objects.size(); i++){
 		if(objects[i].z >= 3){
 			for(int j = 0; j < objects[i].contour.size(); j++){
 				if(objects[i].contour[j].x >= 3 && objects[i].contour[j].y >= 3){
-					if(nowL != objects[i].label){
-						remain1.push_back(objects[i].label);
-						nowL = objects[i].label;
+					if(nowL != i){
+						remain1.push_back(i);
+						nowL = i;
 					}
 				}
 			}
@@ -334,10 +329,10 @@ int main( int argc, char* argv[] ){
 	for(int i = 0; i < objects.size(); i++){
 		if(objects[i].mC > 0.2f){
 			for(int j = 0; j < remain1.size(); j++){
-				if(objects[i].label == remain1[j]){
-					if(nowL != objects[i].label){
-						remain2.push_back(objects[i].label);
-						nowL = objects[i].label;
+				if(i == remain1[j]){
+					if(nowL != i){
+						remain2.push_back(i);
+						nowL = i;
 					}
 				}
 			}
@@ -355,8 +350,8 @@ int main( int argc, char* argv[] ){
 		
 		if(tempCounter == objects[i].contour.size()){
 			for(int j = 0; j < remain2.size(); j++){
-				if(objects[i].label == remain2[j]){
-					remain3.push_back(objects[i].label);
+				if(i == remain2[j]){
+					remain3.push_back(i);
 				}
 			}
 		}
@@ -373,8 +368,8 @@ int main( int argc, char* argv[] ){
 		
 		if(tempCounter == objects[i].contour.size()){
 			for(int j = 0; j < remain3.size(); j++){
-				if(objects[i].label == remain3[j]){
-					remain4.push_back(objects[i].label);
+				if(i == remain3[j]){
+					remain4.push_back(i);
 				}
 			}
 		}
@@ -449,6 +444,60 @@ int main( int argc, char* argv[] ){
 	}
 
 	max = -1;
+
+	//average grey value求法，drawContour时填充label为value（label大小可能会超出，不过可以在操作前先规整一下label），加入读取原图，转化为opencv图像，遍历前图，非0点在objects[it1.getPixel()].agv += it2.getPixel();
+	for( inIterator.GoToBegin(); !inIterator.IsAtEnd(); inIterator.NextSlice() ){
+		ImageType3D::IndexType sliceIndex = inIterator.GetIndex();
+		printf( "Slice Index --- %d ---\n", sliceIndex[2] );
+		ExtractFilterType::InputImageRegionType::SizeType sliceSize = inIterator.GetRegion().GetSize();
+		sliceSize[2] = 0;
+		
+		ExtractFilterType::InputImageRegionType sliceRegion = inIterator.GetRegion();
+		sliceRegion.SetSize( sliceSize );
+		sliceRegion.SetIndex( sliceIndex );
+
+		ExtractFilterType::Pointer inExtractor = ExtractFilterType::New();
+		inExtractor->SetExtractionRegion( sliceRegion );
+		inExtractor->InPlaceOn();
+		inExtractor->SetDirectionCollapseToSubmatrix();
+		inExtractor->SetInput( originReader->GetOutput() );
+
+		try{
+			inExtractor->Update();
+		} catch (itk::ExceptionObject &excp){
+			std::cerr << "ExceptionObject: inExtractor->Update() caught !" << std::endl;
+			std::cerr << excp << std::endl;
+			return EXIT_FAILURE;
+		}
+
+		Mat img = itk::OpenCVImageBridge::ITKImageToCVMat< ImageType2D >( inExtractor->GetOutput() );
+		Mat drawing = Mat::zeros( img.size(), CV_16SC1 );
+		
+		for(int i = 0; i < remain4.size(); i++){
+			drawContours(drawing, objects[remain4[i]].contour[sliceIndex[2]].point, 0, remain4[i], -1, 8, 0, 0, Point(0, 0));//或者用floodfill
+		}
+
+		for(int i = 0; i < drawing.cols; i++){
+			for(int j = 0; j < drawing.rows; j++){
+				if(drawing.at<int>(j, i) != 0){
+					//origin为原图转成opencvImage，待添加
+					//objects[drawing.at<int>(j, i)].agv += origin.at<int>(j, i);
+				}
+			}
+		}
+
+		//objects[drawing.at<int>(j, i)].agv /= objects[drawing.at<int>(j, i)].contour[sliceIndex[2]].area;
+
+		ImageType2D::Pointer itkDrawing;
+		try{
+			itkDrawing=itk::OpenCVImageBridge::CVMatToITKImage< ImageType2D >( drawing );
+		} catch (itk::ExceptionObject &excp){
+			std::cerr << "Exception: CVMatToITKImage failure !" << std::endl;
+			std::cerr << excp << std::endl;
+			return EXIT_FAILURE;
+		}
+		joinSeries->PushBackInput( itkDrawing );
+	}
 
 	try{
 		joinSeries->Update();
