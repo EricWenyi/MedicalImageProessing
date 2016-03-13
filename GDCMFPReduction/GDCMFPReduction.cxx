@@ -9,8 +9,8 @@
 #include "itkOpenCVImageBridge.h"
 
 int main( int argc, char* argv[] ){
-	if( argc < 3 ){
-		std::cerr << "Usage: " << argv[0] << "InputImageFile OutputImageFile" << std::endl;
+	if( argc < 4 ){
+		std::cerr << "Usage: " << argv[0] << "noduleImageFile originImageFile outputImageFile" << std::endl;
 		return EXIT_FAILURE;
 	}
 
@@ -24,31 +24,49 @@ int main( int argc, char* argv[] ){
 	ImageIOType::Pointer gdcmIO = ImageIOType::New();
 
 	typedef itk::ImageFileReader< ImageType3D > ReaderType;
+	ReaderType::Pointer noduleReader = ReaderType::New();
+	noduleReader->SetImageIO( gdcmIO );
+	noduleReader->SetFileName( argv[1] );
+
 	ReaderType::Pointer originReader = ReaderType::New();
 	originReader->SetImageIO( gdcmIO );
-	originReader->SetFileName( argv[1] );
+	originReader->SetFileName( argv[2] );
 
 	try{
-		originReader->Update();
+		noduleReader->Update();
 	} catch (itk::ExceptionObject &excp){
-		std::cerr << "ExceptionObject: reader->Update() caught !" << std::endl;
+		std::cerr << "ExceptionObject: noduleReader->Update() caught !" << std::endl;
 		std::cerr << excp << std::endl;
 		return EXIT_FAILURE;
 	}
 
+	try{
+		originReader->Update();
+	} catch (itk::ExceptionObject &excp){
+		std::cerr << "ExceptionObject: originReader->Update() caught !" << std::endl;
+		std::cerr << excp << std::endl;
+		return EXIT_FAILURE;
+	}
+
+	ImageType3D::ConstPointer noduleImage3D = noduleReader->GetOutput();
 	ImageType3D::ConstPointer originImage3D = originReader->GetOutput();
+
 	typedef itk::ImageSliceConstIteratorWithIndex < ImageType3D > SliceIteratorType;
 
-	SliceIteratorType inIterator( originImage3D, originImage3D->GetLargestPossibleRegion() );
-	inIterator.SetFirstDirection( 0 );
-	inIterator.SetSecondDirection( 1 );
+	SliceIteratorType noduleIterator( noduleImage3D, noduleImage3D->GetLargestPossibleRegion() );
+	noduleIterator.SetFirstDirection( 0 );
+	noduleIterator.SetSecondDirection( 1 );
+
+	SliceIteratorType originIterator( originImage3D, originImage3D->GetLargestPossibleRegion() );
+	originIterator.SetFirstDirection( 0 );
+	originIterator.SetSecondDirection( 1 );
 
 	typedef itk::ExtractImageFilter< ImageType3D, ImageType2D > ExtractFilterType;
 	typedef itk::JoinSeriesImageFilter< ImageType2D, ImageType3D > JoinSeriesFilterType;
 
 	JoinSeriesFilterType::Pointer joinSeries = JoinSeriesFilterType::New();
-	joinSeries->SetOrigin( originImage3D->GetOrigin()[2] );
-	joinSeries->SetSpacing( originImage3D->GetSpacing()[2] );
+	joinSeries->SetOrigin( noduleImage3D->GetOrigin()[2] );
+	joinSeries->SetSpacing( noduleImage3D->GetSpacing()[2] );
 
 	using namespace cv;
 
@@ -58,27 +76,28 @@ int main( int argc, char* argv[] ){
 		int y;
 		int label;
 	};
-	APoint apoint;
+	APoint aPoint;
 	vector<APoint> temp1;
 	vector<APoint> temp2;
 	vector<vector<APoint>> points;
 	vector<int> labelToRemain;
 
 	struct AContour{
-		int n;//contour的序号，后为contour标记label时会用到
+		int n;
 		int label;
+		int slice;
 		double area;
 		double perimeter;
-		double boundingArea;//minAreaRect的面积
-		double a;//fitEllipse的长
-		double b;//fitEllipse的宽
-		int x;//boundingRect的长
-		int y;//boundingRect的宽
-		vector<Point> point;//将属于同一contour的点都推进去
+		double boundingArea;
+		double a;
+		double b;
+		int x;
+		int y;
+		vector<Point> point;
 	};
-	AContour acontour;
-	vector<AContour> temp;
-	vector<vector<AContour>> contour;
+	AContour aContour;
+	vector<AContour> temp3;
+	vector<vector<AContour>> contours;
 
 	int labelCounter = 0;
 	int zeroCounter = 0;
@@ -91,97 +110,99 @@ int main( int argc, char* argv[] ){
 	NeighborhoodIteratorType it( radius, originImage3D, originImage3D->GetLargestPossibleRegion() );
 	ImageType3D::IndexType location;
 
-	for( inIterator.GoToBegin(); !inIterator.IsAtEnd(); inIterator.NextSlice() ){
-		ImageType3D::IndexType sliceIndex = inIterator.GetIndex();
+	for( noduleIterator.GoToBegin(); !noduleIterator.IsAtEnd(); noduleIterator.NextSlice() ){
+		ImageType3D::IndexType sliceIndex = noduleIterator.GetIndex();
 		location[2] = sliceIndex[2];
 		printf( "Slice Index --- %d ---\n", sliceIndex[2] );
-		ExtractFilterType::InputImageRegionType::SizeType sliceSize = inIterator.GetRegion().GetSize();
+		ExtractFilterType::InputImageRegionType::SizeType sliceSize = noduleIterator.GetRegion().GetSize();
 		sliceSize[2] = 0;
 		
-		ExtractFilterType::InputImageRegionType sliceRegion = inIterator.GetRegion();
+		ExtractFilterType::InputImageRegionType sliceRegion = noduleIterator.GetRegion();
 		sliceRegion.SetSize( sliceSize );
 		sliceRegion.SetIndex( sliceIndex );
 
-		ExtractFilterType::Pointer inExtractor = ExtractFilterType::New();
-		inExtractor->SetExtractionRegion( sliceRegion );
-		inExtractor->InPlaceOn();
-		inExtractor->SetDirectionCollapseToSubmatrix();
-		inExtractor->SetInput( originReader->GetOutput() );
+		ExtractFilterType::Pointer extractor = ExtractFilterType::New();
+		extractor->SetExtractionRegion( sliceRegion );
+		extractor->InPlaceOn();
+		extractor->SetDirectionCollapseToSubmatrix();
+		extractor->SetInput( noduleReader->GetOutput() );
 
 		try{
-			inExtractor->Update();
+			extractor->Update();
 		} catch (itk::ExceptionObject &excp){
-			std::cerr << "ExceptionObject: inExtractor->Update() caught !" << std::endl;
+			std::cerr << "ExceptionObject: extractor->Update() caught !" << std::endl;
 			std::cerr << excp << std::endl;
 			return EXIT_FAILURE;
 		}
 
-		Mat img = itk::OpenCVImageBridge::ITKImageToCVMat< ImageType2D >( inExtractor->GetOutput() );
+		Mat img = itk::OpenCVImageBridge::ITKImageToCVMat< ImageType2D >( extractor->GetOutput() );
 
-		vector<vector<Point>> contours;
+		vector<vector<Point>> contour;
 		vector<Vec4i> hierarchy;
-		findContours( img, contours, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_NONE, Point(0, 0) );
+		findContours( img, contour, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_NONE, Point(0, 0) );
 
 		if(sliceIndex[2] == 0){
-			for(int i = 0; i < contours.size(); i++){
-				acontour.n = i;
-				acontour.label = labelCounter;
-				acontour.area = contourArea(contours[i]);
-				acontour.perimeter = arcLength(contours[i], true);
-				//contour内的点不足5个时fitEllipse无法使用
-				if(contours[i].size() < 5){
-					acontour.a = -2.9f;
-					acontour.b = -1.0f;
+			for(int i = 0; i < contour.size(); i++){
+				aContour.n = i;
+				aContour.label = labelCounter;
+				aContour.slice = sliceIndex[2];
+				aContour.area = contourArea(contour[i]);
+				aContour.perimeter = arcLength(contour[i], true);
+				
+				if(contour[i].size() < 5){
+					aContour.a = -3.0f;
+					aContour.b = -1.0f;
 				} else {
-					acontour.a = fitEllipse(contours[i]).size.height;
-					acontour.b = fitEllipse(contours[i]).size.width;
+					aContour.a = fitEllipse(contour[i]).size.height;
+					aContour.b = fitEllipse(contour[i]).size.width;
 				}
 
-				acontour.boundingArea = minAreaRect(contours[i]).size.area();
-				acontour.x = boundingRect(contours[i]).height;
-				acontour.y = boundingRect(contours[i]).width;
+				aContour.boundingArea = minAreaRect(contour[i]).size.area();
+				aContour.x = boundingRect(contour[i]).height;
+				aContour.y = boundingRect(contour[i]).width;
 
-				for(int j = 0; j < contours[i].size(); j++){
-					apoint.c = i;
-					apoint.x = contours[i][j].x;
-					apoint.y = contours[i][j].y;
-					apoint.label = labelCounter;
-					temp1.push_back(apoint);
-					acontour.point.push_back(contours[i][j]);//将当前contour内的全部点保存于结构体中
+				for(int j = 0; j < contour[i].size(); j++){
+					aPoint.c = i;
+					aPoint.x = contour[i][j].x;
+					aPoint.y = contour[i][j].y;
+					aPoint.label = labelCounter;
+					temp1.push_back(aPoint);
+					aContour.point.push_back(contour[i][j]);
 				}
 
 				labelCounter++;
-				temp.push_back(acontour);
+				temp3.push_back(aContour);
 			}
 		} else {
-			for(int i = 0; i < contours.size(); i++){
-				acontour.n = i;
-				acontour.label = -1;
-				acontour.area = contourArea(contours[i]);
-				acontour.perimeter = arcLength(contours[i], true);
+			for(int i = 0; i < contour.size(); i++){
+				aContour.n = i;
+				aContour.label = -1;
+				aContour.slice = sliceIndex[2];
+				aContour.area = contourArea(contour[i]);
+				aContour.perimeter = arcLength(contour[i], true);
 				
-				if(contours[i].size() < 5){
-					acontour.a = -2.9f;
-					acontour.b = -1.0f;
+				if(contour[i].size() < 5){
+					aContour.a = -3.0f;
+					aContour.b = -1.0f;
 				} else {
-					acontour.a = fitEllipse(contours[i]).size.height;
-					acontour.b = fitEllipse(contours[i]).size.width;
+					aContour.a = fitEllipse(contour[i]).size.height;
+					aContour.b = fitEllipse(contour[i]).size.width;
 				}
 				
-				acontour.boundingArea = minAreaRect(contours[i]).size.area();
-				acontour.x = boundingRect(contours[i]).height;
-				acontour.y = boundingRect(contours[i]).width;
+				aContour.boundingArea = minAreaRect(contour[i]).size.area();
+				aContour.x = boundingRect(contour[i]).height;
+				aContour.y = boundingRect(contour[i]).width;
 
-				for(int j = 0; j < contours[i].size(); j++){
-					apoint.c = i;
-					apoint.x = contours[i][j].x;
-					apoint.y = contours[i][j].y;
-					apoint.label = -1;
-					temp2.push_back(apoint);
-					acontour.point.push_back(contours[i][j]);
+				for(int j = 0; j < contour[i].size(); j++){
+					aPoint.c = i;
+					aPoint.x = contour[i][j].x;
+					aPoint.y = contour[i][j].y;
+					aPoint.label = -1;
+					temp2.push_back(aPoint);
+					aContour.point.push_back(contour[i][j]);
 				}
 
-				temp.push_back(acontour);
+				temp3.push_back(aContour);
 			}
 	
 			for(int i = 0; i < temp2.size(); i++){
@@ -224,9 +245,9 @@ int main( int argc, char* argv[] ){
 				if(nowC != temp2[i].c){
 					nowC = temp2[i].c;
 					nowL = temp2[i].label;
-					for(int j = 0; j < temp.size(); j++){
-						if(temp[j].n == nowC){
-							temp[j].label = nowL;
+					for(int j = 0; j < temp3.size(); j++){
+						if(temp3[j].n == nowC){
+							temp3[j].label = nowL;
 						}
 					}
 				} else if(nowL != temp2[i].label) {
@@ -238,48 +259,52 @@ int main( int argc, char* argv[] ){
 			nowL = -1;
 
 			points.push_back(temp1);
-			contour.push_back(temp);
+			contours.push_back(temp3);
 			
-			if(sliceIndex[2] == inIterator.GetRegion().GetSize()[2] - 1){
+			if(sliceIndex[2] == noduleIterator.GetRegion().GetSize()[2] - 1){
 				points.push_back(temp2);
-				contour.push_back(temp);
+				contours.push_back(temp3);
 			} else {
 				temp1.clear();
 				temp1.resize(temp2.size());
 				memcpy(&temp1[0], &temp2[0], temp2.size() * sizeof(APoint));
 				temp2.clear();
-				temp.clear();
+				temp3.clear();
 			}
 		}
 	}
 
 	struct AnObject{
 		int label;
-		int z;//3D物体Z轴大小
-		int mC;//3D物体的最大圆度
-		vector<AContour> contour;//将属于同一物体的contour推进去
+		int z;
+		int mC;
+		double agv;
+		double sd;
+		vector<AContour> contour;
 	};
-	AnObject anobject;
+	AnObject anObject;
 	vector<AnObject> objects;
 	int tempCounter = 0;
 
-	for(int i = 0; i < contour.size(); i++){
+	for(int i = 0; i < contours.size(); i++){
 		if(i == 0){
-			for(int j = 0; j < contour[i].size(); j++){
-				anobject.label = contour[i][j].label;
-				anobject.z = 1;
-				anobject.mC = -1;
-				anobject.contour.push_back(contour[i][j]);
-				objects.push_back(anobject);
+			for(int j = 0; j < contours[i].size(); j++){
+				anObject.label = contours[i][j].label;
+				anObject.z = 1;
+				anObject.mC = -1;
+				anObject.agv = 0.0f;
+				anObject.sd = 0.0f;
+				anObject.contour.push_back(contours[i][j]);
+				objects.push_back(anObject);
 			}
 		} else {
-			for(int j = 0; j < contour[i].size(); j++){
+			for(int j = 0; j < contours[i].size(); j++){
 				for(int k = 0; k < objects.size(); k++){
-					if(contour[i][j].label == objects[k].label){
+					if(contours[i][j].label == objects[k].label){
 						objects[k].z++;
-						anobject.contour.push_back(contour[i][j]);
-						if(4 * 3.1415926f * contour[i][j].area / contour[i][j].perimeter / contour[i][j].perimeter > objects[k].mC){
-							objects[k].mC = 4 * 3.1415926f * contour[i][j].area / contour[i][j].perimeter / contour[i][j].perimeter;
+						anObject.contour.push_back(contours[i][j]);
+						if(4 * 3.1415926f * contours[i][j].area / contours[i][j].perimeter / contours[i][j].perimeter > objects[k].mC){
+							objects[k].mC = 4 * 3.1415926f * contours[i][j].area / contours[i][j].perimeter / contours[i][j].perimeter;
 						}
 					} else {
 						tempCounter++;
@@ -287,11 +312,13 @@ int main( int argc, char* argv[] ){
 				}
 
 				if(tempCounter == objects.size()){
-					anobject.label = contour[i][j].label;
-					anobject.z = 1;
-					anobject.mC = -1;
-					anobject.contour.push_back(contour[i][j]);
-					objects.push_back(anobject);
+					anObject.label = contours[i][j].label;
+					anObject.z = 1;
+					anObject.mC = -1;
+					anObject.agv = 0.0f;
+					anObject.sd = 0.0f;
+					anObject.contour.push_back(contours[i][j]);
+					objects.push_back(anObject);
 				}
 
 				tempCounter = 0;
@@ -301,16 +328,8 @@ int main( int argc, char* argv[] ){
 
 	std::cout<<objects.size()<<std::endl;
 
-	//之后label没有用了，直接用vector下标
-
-	//4个remain分别为4次reduction的结果，层层递进的，下一个remain一定是前面的子集
 	vector<int> remain1, remain2, remain3, remain4;
-	/*
-	reduction1 判断object的Z轴是否大于等于3，在大于等于3的前提下，只要有object中某一个contour合格（X和Y都大于等于3），则该object合格
-	reduction2 判断object中各contour中最大的那个圆度，大于0.2则认为该object合格
-	reduction3 判断object中各contour的boundingArea（最小面积包围的旋转矩形）与contourArea的比值，确保每一个contour此比值小于等于2则该object合格
-	reduction4 判断object中各contour的fitEllipse（其结果是一个旋转矩形）的长短轴（即该旋转举行长宽）的比值，确保每一个contour此比值小于等于3则该contour合格
-	*/
+
 	for(int i = 0; i < objects.size(); i++){
 		if(objects[i].z >= 3){
 			for(int j = 0; j < objects[i].contour.size(); j++){
@@ -382,7 +401,6 @@ int main( int argc, char* argv[] ){
 	std::cout<<remain3.size()<<std::endl;
 	std::cout<<remain4.size()<<std::endl;
 
-	//2D特征提取，以下皆为各变量的最大值
 	vector<double> area, perimeter, circularity, a, b, eccentricity;
 	double max = -1.0f;
 
@@ -445,49 +463,141 @@ int main( int argc, char* argv[] ){
 
 	max = -1;
 
-	//average grey value求法，drawContour时填充label为value（label大小可能会超出，不过可以在操作前先规整一下label），加入读取原图，转化为opencv图像，遍历前图，非0点在objects[it1.getPixel()].agv += it2.getPixel();
-	for( inIterator.GoToBegin(); !inIterator.IsAtEnd(); inIterator.NextSlice() ){
-		ImageType3D::IndexType sliceIndex = inIterator.GetIndex();
+	for( noduleIterator.GoToBegin(), originIterator.GoToBegin(); !noduleIterator.IsAtEnd(); noduleIterator.NextSlice(), originIterator.NextSlice() ){
+		ImageType3D::IndexType sliceIndex = noduleIterator.GetIndex();
 		printf( "Slice Index --- %d ---\n", sliceIndex[2] );
-		ExtractFilterType::InputImageRegionType::SizeType sliceSize = inIterator.GetRegion().GetSize();
+		ExtractFilterType::InputImageRegionType::SizeType sliceSize = noduleIterator.GetRegion().GetSize();
 		sliceSize[2] = 0;
 		
-		ExtractFilterType::InputImageRegionType sliceRegion = inIterator.GetRegion();
+		ExtractFilterType::InputImageRegionType sliceRegion = noduleIterator.GetRegion();
 		sliceRegion.SetSize( sliceSize );
 		sliceRegion.SetIndex( sliceIndex );
 
-		ExtractFilterType::Pointer inExtractor = ExtractFilterType::New();
-		inExtractor->SetExtractionRegion( sliceRegion );
-		inExtractor->InPlaceOn();
-		inExtractor->SetDirectionCollapseToSubmatrix();
-		inExtractor->SetInput( originReader->GetOutput() );
+		ExtractFilterType::Pointer extractor = ExtractFilterType::New();
+		extractor->SetExtractionRegion( sliceRegion );
+		extractor->InPlaceOn();
+		extractor->SetDirectionCollapseToSubmatrix();
+		extractor->SetInput( noduleReader->GetOutput() );
 
 		try{
-			inExtractor->Update();
+			extractor->Update();
 		} catch (itk::ExceptionObject &excp){
-			std::cerr << "ExceptionObject: inExtractor->Update() caught !" << std::endl;
+			std::cerr << "ExceptionObject: extractor->Update() caught !" << std::endl;
 			std::cerr << excp << std::endl;
 			return EXIT_FAILURE;
 		}
 
-		Mat img = itk::OpenCVImageBridge::ITKImageToCVMat< ImageType2D >( inExtractor->GetOutput() );
-		Mat drawing = Mat::zeros( img.size(), CV_16SC1 );
-		
-		for(int i = 0; i < remain4.size(); i++){
-			drawContours(drawing, objects[remain4[i]].contour[sliceIndex[2]].point, 0, remain4[i], -1, 8, 0, 0, Point(0, 0));//或者用floodfill
+		Mat img = itk::OpenCVImageBridge::ITKImageToCVMat< ImageType2D >( extractor->GetOutput() );
+		Mat drawing = Mat::zeros( img.size(), CV_32SC1 );
+
+		extractor->SetInput( originReader->GetOutput() );
+
+		try{
+			extractor->Update();
+		} catch (itk::ExceptionObject &excp){
+			std::cerr << "ExceptionObject: extractor->Update() caught !" << std::endl;
+			std::cerr << excp << std::endl;
+			return EXIT_FAILURE;
 		}
 
-		for(int i = 0; i < drawing.cols; i++){
-			for(int j = 0; j < drawing.rows; j++){
-				if(drawing.at<int>(j, i) != 0){
-					//origin为原图转成opencvImage，待添加
-					//objects[drawing.at<int>(j, i)].agv += origin.at<int>(j, i);
+		Mat origin = itk::OpenCVImageBridge::ITKImageToCVMat< ImageType2D >( extractor->GetOutput() );
+
+		vector<vector<Point>> contourToDraw;
+
+		for(int i = 0; i < remain4.size(); i++){
+			for(int j = 0; j < objects[remain4[i]].contour.size(); j++){
+				if(objects[remain4[i]].contour[j].slice == sliceIndex[2]){
+					contourToDraw.push_back(objects[remain4[i]].contour[j].point);
 				}
 			}
 		}
 
-		//objects[drawing.at<int>(j, i)].agv /= objects[drawing.at<int>(j, i)].contour[sliceIndex[2]].area;
+		for(int i = 0; i < remain4.size(); i++){
+			drawContours(drawing, contourToDraw, i, remain4[i], -1, 8, 0, 0, Point(0, 0));
+		}
 
+		contourToDraw.clear();
+
+		for(int i = 0; i < drawing.cols; i++){
+			for(int j = 0; j < drawing.rows; j++){
+				if(drawing.at<int>(j, i) != 0){
+					objects[drawing.at<int>(j, i)].agv += origin.at<int>(j, i);
+				}
+			}
+		}
+	}
+	
+	for(int i = 0; i < remain4.size(); i++){
+		for(int j = 0; j < objects[remain4[i]].contour.size(); j++){
+			tempCounter += (int)objects[remain4[i]].contour[j].area;
+		}
+		objects[remain4[i]].agv /= tempCounter;
+		tempCounter = 0;
+	}
+
+	for( noduleIterator.GoToBegin(), originIterator.GoToBegin(); !noduleIterator.IsAtEnd(); noduleIterator.NextSlice(), originIterator.NextSlice() ){
+		ImageType3D::IndexType sliceIndex = noduleIterator.GetIndex();
+		printf( "Slice Index --- %d ---\n", sliceIndex[2] );
+		ExtractFilterType::InputImageRegionType::SizeType sliceSize = noduleIterator.GetRegion().GetSize();
+		sliceSize[2] = 0;
+		
+		ExtractFilterType::InputImageRegionType sliceRegion = noduleIterator.GetRegion();
+		sliceRegion.SetSize( sliceSize );
+		sliceRegion.SetIndex( sliceIndex );
+
+		ExtractFilterType::Pointer extractor = ExtractFilterType::New();
+		extractor->SetExtractionRegion( sliceRegion );
+		extractor->InPlaceOn();
+		extractor->SetDirectionCollapseToSubmatrix();
+		extractor->SetInput( noduleReader->GetOutput() );
+
+		try{
+			extractor->Update();
+		} catch (itk::ExceptionObject &excp){
+			std::cerr << "ExceptionObject: extractor->Update() caught !" << std::endl;
+			std::cerr << excp << std::endl;
+			return EXIT_FAILURE;
+		}
+
+		Mat img = itk::OpenCVImageBridge::ITKImageToCVMat< ImageType2D >( extractor->GetOutput() );
+		Mat drawing = Mat::zeros( img.size(), CV_32SC1 );
+
+		extractor->SetInput( originReader->GetOutput() );
+
+		try{
+			extractor->Update();
+		} catch (itk::ExceptionObject &excp){
+			std::cerr << "ExceptionObject: extractor->Update() caught !" << std::endl;
+			std::cerr << excp << std::endl;
+			return EXIT_FAILURE;
+		}
+
+		Mat origin = itk::OpenCVImageBridge::ITKImageToCVMat< ImageType2D >( extractor->GetOutput() );
+
+		vector<vector<Point>> contourToDraw;
+
+		for(int i = 0; i < remain4.size(); i++){
+			for(int j = 0; j < objects[remain4[i]].contour.size(); j++){
+				if(objects[remain4[i]].contour[j].slice == sliceIndex[2]){
+					contourToDraw.push_back(objects[remain4[i]].contour[j].point);
+				}
+			}
+		}
+
+		for(int i = 0; i < remain4.size(); i++){
+			drawContours(drawing, contourToDraw, i, remain4[i], -1, 8, 0, 0, Point(0, 0));
+		}
+
+		contourToDraw.clear();
+
+		for(int i = 0; i < drawing.cols; i++){
+			for(int j = 0; j < drawing.rows; j++){
+				if(drawing.at<int>(j, i) != 0){
+					objects[drawing.at<int>(j, i)].sd += (origin.at<int>(j, i) - objects[drawing.at<int>(j, i)].agv) * (origin.at<int>(j, i) - objects[drawing.at<int>(j, i)].agv);
+				}
+			}
+		}
+		/*
 		ImageType2D::Pointer itkDrawing;
 		try{
 			itkDrawing=itk::OpenCVImageBridge::CVMatToITKImage< ImageType2D >( drawing );
@@ -497,6 +607,21 @@ int main( int argc, char* argv[] ){
 			return EXIT_FAILURE;
 		}
 		joinSeries->PushBackInput( itkDrawing );
+		*/
+	}
+
+	for(int i = 0; i < remain4.size(); i++){
+		for(int j = 0; j < objects[remain4[i]].contour.size(); j++){
+			tempCounter += (int)objects[remain4[i]].contour[j].area;
+		}
+		objects[remain4[i]].sd = sqrt(objects[remain4[i]].sd / tempCounter);
+		tempCounter = 0;
+	}
+
+	vector<double> agv, sd;
+	for(int i = 0; i < remain4.size(); i++){
+		agv.push_back(objects[remain4[i]].agv);
+		sd.push_back(objects[remain4[i]].sd);
 	}
 
 	try{
@@ -509,7 +634,7 @@ int main( int argc, char* argv[] ){
 
 	typedef itk::ImageFileWriter<ImageType3D> WriterType;
 	WriterType::Pointer writer = WriterType::New();
-	writer->SetFileName( argv[2] );
+	writer->SetFileName( argv[3] );
 	writer->SetInput( joinSeries->GetOutput() );
 
 	try{
