@@ -173,6 +173,8 @@ int main( int argc, char* argv[] ){
 				labelCounter++;
 				temp3.push_back(aContour);
 			}
+
+			contours.push_back(temp3);
 		} else {
 			for(int i = 0; i < contour.size(); i++){
 				aContour.n = i;
@@ -263,7 +265,6 @@ int main( int argc, char* argv[] ){
 			
 			if(sliceIndex[2] == noduleIterator.GetRegion().GetSize()[2] - 1){
 				points.push_back(temp2);
-				contours.push_back(temp3);
 			} else {
 				temp1.clear();
 				temp1.resize(temp2.size());
