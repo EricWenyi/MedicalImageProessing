@@ -511,7 +511,7 @@ int main( int argc, char* argv[] ){
 		}
 
 		Mat img = itk::OpenCVImageBridge::ITKImageToCVMat< ImageType2D >( extractor->GetOutput() );
-		Mat drawing = Mat::zeros( img.size(), CV_32SC1 );
+		Mat drawing = Mat::zeros( img.size(), CV_8UC1 );//
 
 		extractor->SetInput( originReader->GetOutput() );
 
@@ -536,15 +536,15 @@ int main( int argc, char* argv[] ){
 		}
 
 		for(int i = 0; i < remain4.size(); i++){
-			drawContours(drawing, contourToDraw, i, remain4[i], -1, 8, 0, 0, Point(0, 0));
+			drawContours(drawing, contourToDraw, i, remain4[i] + 1, CV_FILLED, 8, noArray(), 0, Point(0, 0));
 		}
 
 		contourToDraw.clear();
 
 		for(int i = 0; i < drawing.cols; i++){
 			for(int j = 0; j < drawing.rows; j++){
-				if(drawing.at<int>(j, i) != 0){
-					objects[drawing.at<int>(j, i)].agv += origin.at<int>(j, i);
+				if(drawing.at<uchar>(j, i) != 0){
+					objects[drawing.at<uchar>(j, i) - 1].agv += origin.at<uchar>(j, i);
 				}
 			}
 		}
@@ -583,7 +583,7 @@ int main( int argc, char* argv[] ){
 		}
 
 		Mat img = itk::OpenCVImageBridge::ITKImageToCVMat< ImageType2D >( extractor->GetOutput() );
-		Mat drawing = Mat::zeros( img.size(), CV_32SC1 );
+		Mat drawing = Mat::zeros( img.size(), CV_8UC1 );//
 
 		extractor->SetInput( originReader->GetOutput() );
 
@@ -608,15 +608,15 @@ int main( int argc, char* argv[] ){
 		}
 
 		for(int i = 0; i < remain4.size(); i++){
-			drawContours(drawing, contourToDraw, i, remain4[i], -1, 8, 0, 0, Point(0, 0));
+			drawContours(drawing, contourToDraw, i, remain4[i] + 1, CV_FILLED, 8, noArray(), 0, Point(0, 0));
 		}
 
 		contourToDraw.clear();
 
 		for(int i = 0; i < drawing.cols; i++){
 			for(int j = 0; j < drawing.rows; j++){
-				if(drawing.at<int>(j, i) != 0){
-					objects[drawing.at<int>(j, i)].sd += (origin.at<int>(j, i) - objects[drawing.at<int>(j, i)].agv) * (origin.at<int>(j, i) - objects[drawing.at<int>(j, i)].agv);
+				if(drawing.at<uchar>(j, i) != 0){
+					objects[drawing.at<uchar>(j, i) - 1].sd += (origin.at<uchar>(j, i) - objects[drawing.at<uchar>(j, i) - 1].agv) * (origin.at<uchar>(j, i) - objects[drawing.at<uchar>(j, i) - 1].agv);
 				}
 			}
 		}
