@@ -349,7 +349,7 @@ int main( int argc, char* argv[] ){
 			}
 		}
 	}
-
+	
 	nowL = -1;
 
 	for(int i = 0; i < objects.size(); i++){
@@ -402,7 +402,7 @@ int main( int argc, char* argv[] ){
 		
 		tempCounter = 0;
 	}
-
+	
 	std::cout<<remain1.size()<<std::endl;
 	std::cout<<remain2.size()<<std::endl;
 	std::cout<<remain3.size()<<std::endl;
@@ -536,7 +536,7 @@ int main( int argc, char* argv[] ){
 		}
 
 		for(int i = 0; i < remain4.size(); i++){
-			drawContours(drawing, contourToDraw, i, remain4[i] + 1, CV_FILLED, 8, noArray(), 0, Point(0, 0));
+			drawContours(drawing, contourToDraw, i, Scalar(i + 1), CV_FILLED, 8, noArray(), 0, Point(0, 0));
 		}
 
 		contourToDraw.clear();
@@ -544,7 +544,7 @@ int main( int argc, char* argv[] ){
 		for(int i = 0; i < drawing.cols; i++){
 			for(int j = 0; j < drawing.rows; j++){
 				if(drawing.at<uchar>(j, i) != 0){
-					objects[drawing.at<uchar>(j, i) - 1].agv += origin.at<uchar>(j, i);
+					objects[remain4[drawing.at<uchar>(j, i) - 1]].agv += origin.at<uchar>(j, i);
 				}
 			}
 		}
@@ -608,7 +608,7 @@ int main( int argc, char* argv[] ){
 		}
 
 		for(int i = 0; i < remain4.size(); i++){
-			drawContours(drawing, contourToDraw, i, remain4[i] + 1, CV_FILLED, 8, noArray(), 0, Point(0, 0));
+			drawContours(drawing, contourToDraw, i, Scalar(i + 1), CV_FILLED, 8, noArray(), 0, Point(0, 0));
 		}
 
 		contourToDraw.clear();
@@ -616,7 +616,7 @@ int main( int argc, char* argv[] ){
 		for(int i = 0; i < drawing.cols; i++){
 			for(int j = 0; j < drawing.rows; j++){
 				if(drawing.at<uchar>(j, i) != 0){
-					objects[drawing.at<uchar>(j, i) - 1].sd += (origin.at<uchar>(j, i) - objects[drawing.at<uchar>(j, i) - 1].agv) * (origin.at<uchar>(j, i) - objects[drawing.at<uchar>(j, i) - 1].agv);
+					objects[remain4[drawing.at<uchar>(j, i) - 1]].sd += (origin.at<uchar>(j, i) - objects[remain4[drawing.at<uchar>(j, i) - 1]].agv) * (origin.at<uchar>(j, i) - objects[remain4[drawing.at<uchar>(j, i) - 1]].agv);
 				}
 			}
 		}
