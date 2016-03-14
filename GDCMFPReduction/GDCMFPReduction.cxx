@@ -279,6 +279,8 @@ int main( int argc, char* argv[] ){
 		int label;
 		int z;
 		int mC;
+		double volume;
+		double surfaceArea;
 		double agv;
 		double sd;
 		vector<AContour> contour;
@@ -293,6 +295,8 @@ int main( int argc, char* argv[] ){
 				anObject.label = contours[i][j].label;
 				anObject.z = 1;
 				anObject.mC = -1;
+				anObject.volume = 0.0f;
+				anObject.surfaceArea = 0.0f;
 				anObject.agv = 0.0f;
 				anObject.sd = 0.0f;
 				anObject.contour.push_back(contours[i][j]);
@@ -302,7 +306,7 @@ int main( int argc, char* argv[] ){
 			for(int j = 0; j < contours[i].size(); j++){
 				for(int k = 0; k < objects.size(); k++){
 					if(contours[i][j].label == objects[k].label){
-						objects[k].z++;
+						objects[k].z++;//
 						anObject.contour.push_back(contours[i][j]);
 						if(4 * 3.1415926f * contours[i][j].area / contours[i][j].perimeter / contours[i][j].perimeter > objects[k].mC){
 							objects[k].mC = 4 * 3.1415926f * contours[i][j].area / contours[i][j].perimeter / contours[i][j].perimeter;
@@ -316,6 +320,8 @@ int main( int argc, char* argv[] ){
 					anObject.label = contours[i][j].label;
 					anObject.z = 1;
 					anObject.mC = -1;
+					anObject.volume = 0.0f;
+					anObject.surfaceArea = 0.0f;
 					anObject.agv = 0.0f;
 					anObject.sd = 0.0f;
 					anObject.contour.push_back(contours[i][j]);
@@ -402,7 +408,7 @@ int main( int argc, char* argv[] ){
 	std::cout<<remain3.size()<<std::endl;
 	std::cout<<remain4.size()<<std::endl;
 
-	vector<double> area, perimeter, circularity, a, b, eccentricity;
+	vector<double> area, perimeter, circularity, a, b, eccentricity, volume, surfaceArea, agv, sd;
 	double max = -1.0f;
 
 	for(int i = 0; i < remain4.size(); i++){
@@ -463,6 +469,22 @@ int main( int argc, char* argv[] ){
 	}
 
 	max = -1;
+
+	for(int i = 0; i < remain4.size(); i++){
+		for(int j = 0; j < objects[remain4[i]].contour.size(); j++){
+			objects[remain4[i]].volume += 0.801f * objects[remain4[i]].contour[j].area;
+		}
+	}
+
+	for(int i = 0; i < remain4.size(); i++){
+		for(int j = 0; j < objects[remain4[i]].contour.size(); j++){
+			if (j == 0 || j == objects[remain4[i]].contour.size() - 1){
+				objects[remain4[i]].surfaceArea += objects[remain4[i]].contour[j].area;
+			} else {
+				objects[remain4[i]].surfaceArea += 0.801f * objects[remain4[i]].contour[j].perimeter;
+			}
+		}
+	}
 
 	for( noduleIterator.GoToBegin(), originIterator.GoToBegin(); !noduleIterator.IsAtEnd(); noduleIterator.NextSlice(), originIterator.NextSlice() ){
 		ImageType3D::IndexType sliceIndex = noduleIterator.GetIndex();
@@ -619,8 +641,9 @@ int main( int argc, char* argv[] ){
 		tempCounter = 0;
 	}
 
-	vector<double> agv, sd;
 	for(int i = 0; i < remain4.size(); i++){
+		volume.push_back(objects[remain4[i]].volume);
+		surfaceArea.push_back(objects[remain4[i]].surfaceArea);
 		agv.push_back(objects[remain4[i]].agv);
 		sd.push_back(objects[remain4[i]].sd);
 	}
