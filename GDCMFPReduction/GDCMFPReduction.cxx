@@ -173,6 +173,7 @@ int main( int argc, char* argv[] ){
 			}
 
 			contours.push_back(temp3);
+			temp3.clear();
 		} else {
 			for(int i = 0; i < contour.size(); i++){
 				aContour.n = i;
