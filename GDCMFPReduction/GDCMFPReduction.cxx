@@ -20,7 +20,7 @@ int main( int argc, char* argv[] ){
 	typedef itk::GDCMImageIO ImageIOType;
 	ImageIOType::Pointer gdcmIO = ImageIOType::New();
 
-	typedef itk::ImageFileReader< ImageType3D > ReaderType;
+	typedef itk::ImageFileReader< ImageType3D > ReaederType;
 	ReaderType::Pointer noduleReader = ReaderType::New();
 	noduleReader->SetImageIO( gdcmIO );
 	noduleReader->SetFileName( argv[1] );
@@ -104,7 +104,7 @@ int main( int argc, char* argv[] ){
 	typedef itk::ConstNeighborhoodIterator< ImageType3D > NeighborhoodIteratorType;
 	NeighborhoodIteratorType::RadiusType radius;
 	radius.Fill(1);
-	NeighborhoodIteratorType it( radius, originImage3D, originImage3D->GetLargestPossibleRegion() );
+	NeighborhoodIteratorType it( radius, noduleImage3D, noduleImage3D->GetLargestPossibleRegion() );
 	ImageType3D::IndexType location;
 
 	for( noduleIterator.GoToBegin(); !noduleIterator.IsAtEnd(); noduleIterator.NextSlice() ){
