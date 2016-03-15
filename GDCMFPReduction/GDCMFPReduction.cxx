@@ -14,11 +14,8 @@ int main( int argc, char* argv[] ){
 		return EXIT_FAILURE;
 	}
 
-	typedef signed short PixelType3D;
-	typedef itk::Image< PixelType3D, 3 > ImageType3D;
-
-	typedef unsigned char PixelType2D;
-	typedef itk::Image< PixelType2D, 2 > ImageType2D;
+	typedef itk::Image< signed short, 3 > ImageType3D;
+	typedef itk::Image< signed short, 2 > ImageType2D;
 
 	typedef itk::GDCMImageIO ImageIOType;
 	ImageIOType::Pointer gdcmIO = ImageIOType::New();
@@ -136,6 +133,7 @@ int main( int argc, char* argv[] ){
 		}
 
 		Mat img = itk::OpenCVImageBridge::ITKImageToCVMat< ImageType2D >( extractor->GetOutput() );
+		img.convertTo(img, CV_8UC1);
 
 		vector<vector<Point>> contour;
 		vector<Vec4i> hierarchy;
@@ -511,7 +509,7 @@ int main( int argc, char* argv[] ){
 		}
 
 		Mat img = itk::OpenCVImageBridge::ITKImageToCVMat< ImageType2D >( extractor->GetOutput() );
-		Mat drawing = Mat::zeros( img.size(), CV_8UC1 );//
+		Mat drawing = Mat::zeros( img.size(), CV_16UC1 );//
 
 		extractor->SetInput( originReader->GetOutput() );
 
@@ -543,8 +541,8 @@ int main( int argc, char* argv[] ){
 
 		for(int i = 0; i < drawing.cols; i++){
 			for(int j = 0; j < drawing.rows; j++){
-				if(drawing.at<uchar>(j, i) != 0){
-					objects[remain4[drawing.at<uchar>(j, i) - 1]].agv += origin.at<uchar>(j, i);
+				if(drawing.at<unsigned short>(j, i) != 0){
+					objects[remain4[drawing.at<unsigned short>(j, i) - 1]].agv += origin.at<signed short>(j, i);
 				}
 			}
 		}
@@ -583,7 +581,7 @@ int main( int argc, char* argv[] ){
 		}
 
 		Mat img = itk::OpenCVImageBridge::ITKImageToCVMat< ImageType2D >( extractor->GetOutput() );
-		Mat drawing = Mat::zeros( img.size(), CV_8UC1 );//
+		Mat drawing = Mat::zeros( img.size(), CV_16UC1 );//
 
 		extractor->SetInput( originReader->GetOutput() );
 
@@ -615,8 +613,8 @@ int main( int argc, char* argv[] ){
 
 		for(int i = 0; i < drawing.cols; i++){
 			for(int j = 0; j < drawing.rows; j++){
-				if(drawing.at<uchar>(j, i) != 0){
-					objects[remain4[drawing.at<uchar>(j, i) - 1]].sd += (origin.at<uchar>(j, i) - objects[remain4[drawing.at<uchar>(j, i) - 1]].agv) * (origin.at<uchar>(j, i) - objects[remain4[drawing.at<uchar>(j, i) - 1]].agv);
+				if(drawing.at<unsigned short>(j, i) != 0){
+					objects[remain4[drawing.at<unsigned short>(j, i) - 1]].sd += (origin.at<signed short>(j, i) - objects[remain4[drawing.at<unsigned short>(j, i) - 1]].agv) * (origin.at<signed short>(j, i) - objects[remain4[drawing.at<unsigned short>(j, i) - 1]].agv);
 				}
 			}
 		}
