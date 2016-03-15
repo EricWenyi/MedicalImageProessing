@@ -277,7 +277,7 @@ int main( int argc, char* argv[] ){
 	struct AnObject{
 		int label;
 		int z;
-		int mC;
+		double mC;
 		double volume;
 		double surfaceArea;
 		double agv;
@@ -338,9 +338,7 @@ int main( int argc, char* argv[] ){
 
 	for(int i = 0; i < objects.size(); i++){
 		if(objects[i].z >= 3){
-			std::cout<<objects[i].contour.size()<<std::endl;
 			for(int j = 0; j < objects[i].contour.size(); j++){
-				std::cout<<objects[i].contour[j].x<<" "<<objects[i].contour[j].y<<std::endl;
 				if(objects[i].contour[j].x >= 3 && objects[i].contour[j].y >= 3){
 					if(nowL != i){
 						remain1.push_back(i);
