@@ -510,7 +510,7 @@ int main( int argc, char* argv[] ){
 		}
 
 		Mat img = itk::OpenCVImageBridge::ITKImageToCVMat< ImageType2D >( extractor->GetOutput() );
-		Mat drawing = Mat::zeros( img.size(), CV_16UC1 );//
+		Mat drawing = Mat::zeros( img.size(), CV_16UC1 );
 
 		extractor->SetInput( originReader->GetOutput() );
 
@@ -582,7 +582,7 @@ int main( int argc, char* argv[] ){
 		}
 
 		Mat img = itk::OpenCVImageBridge::ITKImageToCVMat< ImageType2D >( extractor->GetOutput() );
-		Mat drawing = Mat::zeros( img.size(), CV_16UC1 );//
+		Mat drawing = Mat::zeros( img.size(), CV_16UC1 );
 
 		extractor->SetInput( originReader->GetOutput() );
 
