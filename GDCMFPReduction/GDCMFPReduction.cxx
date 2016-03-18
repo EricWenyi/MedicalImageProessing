@@ -170,6 +170,7 @@ int main( int argc, char* argv[] ){
 
 				labelCounter++;
 				temp3.push_back(aContour);
+				aContour.point.clear();
 			}
 
 			contours.push_back(temp3);
@@ -204,6 +205,7 @@ int main( int argc, char* argv[] ){
 				}
 
 				temp3.push_back(aContour);
+				aContour.point.clear();
 			}
 	
 			for(int i = 0; i < temp2.size(); i++){
@@ -300,6 +302,7 @@ int main( int argc, char* argv[] ){
 				anObject.sd = 0.0f;
 				anObject.contour.push_back(contours[i][j]);
 				objects.push_back(anObject);
+				anObject.contour.clear();
 			}
 		} else {
 			for(int j = 0; j < contours[i].size(); j++){
@@ -325,6 +328,7 @@ int main( int argc, char* argv[] ){
 					anObject.sd = 0.0f;
 					anObject.contour.push_back(contours[i][j]);
 					objects.push_back(anObject);
+					anObject.contour.clear();
 				}
 
 				tempCounter = 0;
@@ -333,7 +337,7 @@ int main( int argc, char* argv[] ){
 	}
 
 	std::cout<<objects.size()<<std::endl;
-
+	
 	vector<int> remain1, remain2, remain3, remain4;
 
 	for(int i = 0; i < objects.size(); i++){
