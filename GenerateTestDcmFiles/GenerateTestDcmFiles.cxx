@@ -70,36 +70,50 @@ int main(int argc, char* argv[]){
   image->Allocate(true);
   //Drawing
   //Slice1
-  for(int i=10;i<20;i++)
-	  SetPixelInterface(image,10,i,0,1);
+
+  for(int x=99;x<101;x++){
+	  for(int y=99;y<101;y++){
+			SetPixelInterface(image,x,y,0,x+y);
+		}
+	  }
   
-  for(int i=10;i<20;i++)
-	  SetPixelInterface(image,i,10,0,1);
-
-  for(int i=10;i<20;i++)
-	  SetPixelInterface(image,i,20,0,1);
-
-  for(int i=10;i<20;i++)
-	  SetPixelInterface(image,20,i,0,1);
-
-
+    for(int x=120;x<122;x++){
+	  for(int y=120;y<122;y++){
+			SetPixelInterface(image,x,y,0,x+y);
+		}
+	  }
+  
   //Slice2
-  for(int i=21;i<30;i++)
-	  SetPixelInterface(image,10,i,1,1);
+  for(int x=97;x<100;x++){
+	  for(int y=97;y<100;y++){
+			SetPixelInterface(image,x,y,1,x+y);
+		}
+	  }
   
-  for(int i=10;i<20;i++)
-	  SetPixelInterface(image,i,21,1,1);
-
-  for(int i=10;i<20;i++)
-	  SetPixelInterface(image,i,30,1,1);
-
-  for(int i=21;i<30;i++)
-	  SetPixelInterface(image,20,i,1,1);
+    for(int x=119;x<122;x++){
+	  for(int y=119;y<122;y++){
+		    if((y-x<5)&&(y-x>-5))
+			SetPixelInterface(image,x,y,1,x+y);
+		}
+	  }
+ 
+  
 
   //Slice3
-  for(int i=10;i<20;i++)
-	   SetPixelInterface(image,i,20,2,3);
-
+  for(int x=99;x<101;x++){
+	  for(int y=99;y<101;y++){
+			SetPixelInterface(image,x,y,2,x+y);
+		}
+	  }
+  
+    for(int x=120;x<122;x++){
+	  for(int y=120;y<122;y++){
+			SetPixelInterface(image,x,y,2,x+y);
+		}
+	  }
+ 
+  
+  
 
   	typedef unsigned short PixelType3D;
 	typedef itk::Image< PixelType3D, 3 > ImageType3D;
