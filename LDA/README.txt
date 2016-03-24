@@ -1,0 +1,1 @@
+需要额外在LDA项目的C++输入里，添加Contrib所在的Opencv路径
