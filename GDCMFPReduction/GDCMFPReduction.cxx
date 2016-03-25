@@ -77,10 +77,8 @@ int main( int argc, char* argv[] ){
 	vector<APoint> temp1;
 	vector<APoint> temp2;
 	vector<vector<APoint>> points;
-	vector<int> labelToRemain;
 
 	struct AContour{
-		int n;
 		int label;
 		int slice;
 		double area;
@@ -138,10 +136,22 @@ int main( int argc, char* argv[] ){
 		vector<vector<Point>> contour;
 		vector<Vec4i> hierarchy;
 		findContours( img, contour, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_NONE, Point(0, 0) );
-
+		/*
+		vector<vector<Point>> set(contour.size());
+		for(int i = 0; i < img.cols; i++){
+			for(int j = 0; j < img.rows; j++){
+				if(img.at<uchar>(j, i) != 0){
+					for(int k = 0; k < contour.size(); k++){
+						if(pointPolygonTest(contour[k], Point(j, i), false) != -1){
+							set[k].push_back(Point(j, i));
+						}
+					}
+				}
+			}
+		}
+		*/
 		if(sliceIndex[2] == 0){
 			for(int i = 0; i < contour.size(); i++){
-				aContour.n = i;
 				aContour.label = labelCounter;
 				aContour.slice = sliceIndex[2];
 				aContour.area = contourArea(contour[i]);
@@ -177,7 +187,6 @@ int main( int argc, char* argv[] ){
 			temp3.clear();
 		} else {
 			for(int i = 0; i < contour.size(); i++){
-				aContour.n = i;
 				aContour.label = -1;
 				aContour.slice = sliceIndex[2];
 				aContour.area = contourArea(contour[i]);
@@ -222,7 +231,7 @@ int main( int argc, char* argv[] ){
 								if(counter != 0){
 									temp2[i].label = temp1[k].label;
 									counter++;
-								} else if(temp2[i].label != temp1[k].label) {
+								} else if (temp2[i].label != temp1[k].label){
 									for(int l = 0; l < temp1.size(); l++){
 										if(temp1[l].label == temp1[k].label){
 											temp1[l].label = temp2[i].label;
@@ -231,35 +240,31 @@ int main( int argc, char* argv[] ){
 								}
 							}
 						}
-					} else {
-						zeroCounter++;
 					}
 				}
 
 				counter = -1;
 
-				if(zeroCounter == 9){
-					temp2[i].label = labelCounter;
-					labelCounter++;
-				}
-
-				zeroCounter = 0;
-
 				if(nowC != temp2[i].c){
 					nowC = temp2[i].c;
-					nowL = temp2[i].label;
-					for(int j = 0; j < temp3.size(); j++){
-						if(temp3[j].n == nowC){
-							temp3[j].label = nowL;
-						}
+					zeroCounter = 0;
+					if(temp2[i].label == -1){
+						zeroCounter++;
+					} else {
+						temp3[nowC].label = temp2[i].label;
 					}
-				} else if(nowL != temp2[i].label) {
-					temp2[i].label = nowL;
+				} else if (temp2[i].label == -1){
+					zeroCounter++;
+					if(zeroCounter == temp3[nowC].point.size()){
+						temp3[nowC].label = labelCounter;
+						labelCounter++;
+					}
+				} else if (temp3[nowC].label == -1){
+					temp3[nowC].label = temp2[i].label;
 				}
 			}
 
 			nowC = -1;
-			nowL = -1;
 
 			points.push_back(temp1);
 			contours.push_back(temp3);
@@ -289,7 +294,8 @@ int main( int argc, char* argv[] ){
 	AnObject anObject;
 	vector<AnObject> objects;
 	int tempCounter = 0;
-
+	int counter = 0;
+	
 	for(int i = 0; i < contours.size(); i++){
 		if(i == 0){
 			for(int j = 0; j < contours[i].size(); j++){
@@ -308,7 +314,13 @@ int main( int argc, char* argv[] ){
 			for(int j = 0; j < contours[i].size(); j++){
 				for(int k = 0; k < objects.size(); k++){
 					if(contours[i][j].label == objects[k].label){
-						objects[k].z++;
+						if(counter == 0){
+							objects[k].z++;
+							counter++;
+						} else {
+							objects[k].z = 1;
+						}
+						
 						objects[k].contour.push_back(contours[i][j]);
 						if(4 * 3.1415926f * contours[i][j].area / contours[i][j].perimeter / contours[i][j].perimeter > objects[k].mC){
 							objects[k].mC = 4 * 3.1415926f * contours[i][j].area / contours[i][j].perimeter / contours[i][j].perimeter;
@@ -317,6 +329,8 @@ int main( int argc, char* argv[] ){
 						tempCounter++;
 					}
 				}
+
+				counter = 0;
 
 				if(tempCounter == objects.size()){
 					anObject.label = contours[i][j].label;
@@ -337,7 +351,7 @@ int main( int argc, char* argv[] ){
 	}
 
 	std::cout<<objects.size()<<std::endl;
-	
+
 	vector<int> remain1, remain2, remain3, remain4;
 
 	for(int i = 0; i < objects.size(); i++){
@@ -411,84 +425,6 @@ int main( int argc, char* argv[] ){
 	std::cout<<remain3.size()<<std::endl;
 	std::cout<<remain4.size()<<std::endl;
 
-	vector<double> area, perimeter, circularity, a, b, eccentricity, volume, surfaceArea, agv, sd;
-	double max = -1.0f;
-
-	for(int i = 0; i < remain4.size(); i++){
-		for(int j = 0; j < objects[remain4[i]].contour.size(); j++){
-			if(objects[remain4[i]].contour[j].area > max){
-				max = objects[remain4[i]].contour[j].area;
-			}
-		}
-		area.push_back(max);
-	}
-
-	max = -1;
-
-	for(int i = 0; i < remain4.size(); i++){
-		for(int j = 0; j < objects[remain4[i]].contour.size(); j++){
-			if(objects[remain4[i]].contour[j].perimeter > max){
-				max = objects[remain4[i]].contour[j].perimeter;
-			}
-		}
-		perimeter.push_back(max);
-	}
-
-	for(int i = 0; i < remain4.size(); i++){
-		circularity.push_back(objects[remain4[i]].mC);
-	}
-
-	max = -1;
-
-	for(int i = 0; i < remain4.size(); i++){
-		for(int j = 0; j < objects[remain4[i]].contour.size(); j++){
-			if(objects[remain4[i]].contour[j].a > max){
-				max = objects[remain4[i]].contour[j].a;
-			}
-		}
-		a.push_back(max);
-	}
-
-	max = -1;
-
-	for(int i = 0; i < remain4.size(); i++){
-		for(int j = 0; j < objects[remain4[i]].contour.size(); j++){
-			if(objects[remain4[i]].contour[j].b > max){
-				max = objects[remain4[i]].contour[j].b;
-			}
-		}
-		b.push_back(max);
-	}
-
-	max = -1;
-
-	for(int i = 0; i < remain4.size(); i++){
-		for(int j = 0; j < objects[remain4[i]].contour.size(); j++){
-			if(sqrt(1 - (objects[remain4[i]].contour[j].b * objects[remain4[i]].contour[j].b / objects[remain4[i]].contour[j].a / objects[remain4[i]].contour[j].a)) > max){
-				max = sqrt(1 - (objects[remain4[i]].contour[j].b * objects[remain4[i]].contour[j].b / objects[remain4[i]].contour[j].a / objects[remain4[i]].contour[j].a));
-			}
-		}
-		eccentricity.push_back(max);
-	}
-
-	max = -1;
-
-	for(int i = 0; i < remain4.size(); i++){
-		for(int j = 0; j < objects[remain4[i]].contour.size(); j++){
-			objects[remain4[i]].volume += 0.801f * objects[remain4[i]].contour[j].area;
-		}
-	}
-
-	for(int i = 0; i < remain4.size(); i++){
-		for(int j = 0; j < objects[remain4[i]].contour.size(); j++){
-			if (j == 0 || j == objects[remain4[i]].contour.size() - 1){
-				objects[remain4[i]].surfaceArea += objects[remain4[i]].contour[j].area;
-			} else {
-				objects[remain4[i]].surfaceArea += 0.801f * objects[remain4[i]].contour[j].perimeter;
-			}
-		}
-	}
-
 	for( noduleIterator.GoToBegin(), originIterator.GoToBegin(); !noduleIterator.IsAtEnd(); noduleIterator.NextSlice(), originIterator.NextSlice() ){
 		ImageType3D::IndexType sliceIndex = noduleIterator.GetIndex();
 		printf( "Slice Index --- %d ---\n", sliceIndex[2] );
@@ -555,7 +491,7 @@ int main( int argc, char* argv[] ){
 	
 	for(int i = 0; i < remain4.size(); i++){
 		for(int j = 0; j < objects[remain4[i]].contour.size(); j++){
-			tempCounter += (int)objects[remain4[i]].contour[j].area;
+			tempCounter = tempCounter + (int)objects[remain4[i]].contour[j].area + objects[remain4[i]].contour[j].point.size();
 		}
 		objects[remain4[i]].agv /= tempCounter;
 		tempCounter = 0;
@@ -638,10 +574,88 @@ int main( int argc, char* argv[] ){
 
 	for(int i = 0; i < remain4.size(); i++){
 		for(int j = 0; j < objects[remain4[i]].contour.size(); j++){
-			tempCounter += (int)objects[remain4[i]].contour[j].area;
+			tempCounter = tempCounter + (int)objects[remain4[i]].contour[j].area + objects[remain4[i]].contour[j].point.size();
 		}
 		objects[remain4[i]].sd = sqrt(objects[remain4[i]].sd / tempCounter);
 		tempCounter = 0;
+	}
+
+	vector<double> area, perimeter, circularity, a, b, eccentricity, volume, surfaceArea, agv, sd;
+	double max = -1.0f;
+
+	for(int i = 0; i < remain4.size(); i++){
+		for(int j = 0; j < objects[remain4[i]].contour.size(); j++){
+			if(objects[remain4[i]].contour[j].area > max){
+				max = objects[remain4[i]].contour[j].area;
+			}
+		}
+		area.push_back(max);
+	}
+
+	max = -1;
+
+	for(int i = 0; i < remain4.size(); i++){
+		for(int j = 0; j < objects[remain4[i]].contour.size(); j++){
+			if(objects[remain4[i]].contour[j].perimeter > max){
+				max = objects[remain4[i]].contour[j].perimeter;
+			}
+		}
+		perimeter.push_back(max);
+	}
+
+	for(int i = 0; i < remain4.size(); i++){
+		circularity.push_back(objects[remain4[i]].mC);
+	}
+
+	max = -1;
+
+	for(int i = 0; i < remain4.size(); i++){
+		for(int j = 0; j < objects[remain4[i]].contour.size(); j++){
+			if(objects[remain4[i]].contour[j].a > max){
+				max = objects[remain4[i]].contour[j].a;
+			}
+		}
+		a.push_back(max);
+	}
+
+	max = -1;
+
+	for(int i = 0; i < remain4.size(); i++){
+		for(int j = 0; j < objects[remain4[i]].contour.size(); j++){
+			if(objects[remain4[i]].contour[j].b > max){
+				max = objects[remain4[i]].contour[j].b;
+			}
+		}
+		b.push_back(max);
+	}
+
+	max = -1;
+
+	for(int i = 0; i < remain4.size(); i++){
+		for(int j = 0; j < objects[remain4[i]].contour.size(); j++){
+			if(sqrt(1 - (objects[remain4[i]].contour[j].b * objects[remain4[i]].contour[j].b / objects[remain4[i]].contour[j].a / objects[remain4[i]].contour[j].a)) > max){
+				max = sqrt(1 - (objects[remain4[i]].contour[j].b * objects[remain4[i]].contour[j].b / objects[remain4[i]].contour[j].a / objects[remain4[i]].contour[j].a));
+			}
+		}
+		eccentricity.push_back(max);
+	}
+
+	max = -1;
+
+	for(int i = 0; i < remain4.size(); i++){
+		for(int j = 0; j < objects[remain4[i]].contour.size(); j++){
+			objects[remain4[i]].volume += 0.801f * objects[remain4[i]].contour[j].area;
+		}
+	}
+
+	for(int i = 0; i < remain4.size(); i++){
+		for(int j = 0; j < objects[remain4[i]].contour.size(); j++){
+			if (j == 0 || j == objects[remain4[i]].contour.size() - 1){
+				objects[remain4[i]].surfaceArea += objects[remain4[i]].contour[j].area;
+			} else {
+				objects[remain4[i]].surfaceArea += 0.801f * objects[remain4[i]].contour[j].perimeter;
+			}
+		}
 	}
 
 	for(int i = 0; i < remain4.size(); i++){
