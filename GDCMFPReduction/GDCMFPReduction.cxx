@@ -136,6 +136,7 @@ int main( int argc, char* argv[] ){
 		vector<vector<Point>> contour;
 		vector<Vec4i> hierarchy;
 		findContours( img, contour, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_NONE, Point(0, 0) );
+
 		/*
 		vector<vector<Point>> set(contour.size());
 		for(int i = 0; i < img.cols; i++){
@@ -150,6 +151,7 @@ int main( int argc, char* argv[] ){
 			}
 		}
 		*/
+
 		if(sliceIndex[2] == 0){
 			for(int i = 0; i < contour.size(); i++){
 				aContour.label = labelCounter;
@@ -284,6 +286,7 @@ int main( int argc, char* argv[] ){
 	struct AnObject{
 		int label;
 		int z;
+		int count;
 		double mC;
 		double volume;
 		double surfaceArea;
@@ -301,6 +304,7 @@ int main( int argc, char* argv[] ){
 			for(int j = 0; j < contours[i].size(); j++){
 				anObject.label = contours[i][j].label;
 				anObject.z = 1;
+				anObject.count = 0;
 				anObject.mC = -1;
 				anObject.volume = 0.0f;
 				anObject.surfaceArea = 0.0f;
@@ -335,6 +339,7 @@ int main( int argc, char* argv[] ){
 				if(tempCounter == objects.size()){
 					anObject.label = contours[i][j].label;
 					anObject.z = 1;
+					anObject.count = 0;
 					anObject.mC = -1;
 					anObject.volume = 0.0f;
 					anObject.surfaceArea = 0.0f;
@@ -484,17 +489,14 @@ int main( int argc, char* argv[] ){
 			for(int j = 0; j < drawing.rows; j++){
 				if(drawing.at<unsigned short>(j, i) != 0){
 					objects[remain4[drawing.at<unsigned short>(j, i) - 1]].agv += origin.at<signed short>(j, i);
+					objects[remain4[drawing.at<unsigned short>(j, i) - 1]].count++;
 				}
 			}
 		}
 	}
 	
 	for(int i = 0; i < remain4.size(); i++){
-		for(int j = 0; j < objects[remain4[i]].contour.size(); j++){
-			tempCounter = tempCounter + (int)objects[remain4[i]].contour[j].area + objects[remain4[i]].contour[j].point.size();
-		}
-		objects[remain4[i]].agv /= tempCounter;
-		tempCounter = 0;
+		objects[remain4[i]].agv /= objects[remain4[i]].count;
 	}
 
 	for( noduleIterator.GoToBegin(), originIterator.GoToBegin(); !noduleIterator.IsAtEnd(); noduleIterator.NextSlice(), originIterator.NextSlice() ){
@@ -556,6 +558,7 @@ int main( int argc, char* argv[] ){
 			for(int j = 0; j < drawing.rows; j++){
 				if(drawing.at<unsigned short>(j, i) != 0){
 					objects[remain4[drawing.at<unsigned short>(j, i) - 1]].sd += (origin.at<signed short>(j, i) - objects[remain4[drawing.at<unsigned short>(j, i) - 1]].agv) * (origin.at<signed short>(j, i) - objects[remain4[drawing.at<unsigned short>(j, i) - 1]].agv);
+					objects[remain4[drawing.at<unsigned short>(j, i) - 1]].count++;
 				}
 			}
 		}
@@ -573,11 +576,7 @@ int main( int argc, char* argv[] ){
 	}
 
 	for(int i = 0; i < remain4.size(); i++){
-		for(int j = 0; j < objects[remain4[i]].contour.size(); j++){
-			tempCounter = tempCounter + (int)objects[remain4[i]].contour[j].area + objects[remain4[i]].contour[j].point.size();
-		}
-		objects[remain4[i]].sd = sqrt(objects[remain4[i]].sd / tempCounter);
-		tempCounter = 0;
+		objects[remain4[i]].sd = sqrt(objects[remain4[i]].sd / objects[remain4[i]].count);
 	}
 
 	vector<double> area, perimeter, circularity, a, b, eccentricity, volume, surfaceArea, agv, sd;
