@@ -8,6 +8,10 @@
 #include "itkConstNeighborhoodIterator.h"
 #include "itkOpenCVImageBridge.h"
 
+#include <boost\archive\text_iarchive.hpp>
+#include <boost\archive\text_oarchive.hpp>
+#include <boost\serialization\vector.hpp>
+
 int main( int argc, char* argv[] ){
 	if( argc < 4 ){
 		std::cerr << "Usage: " << argv[0] << "noduleImageFile originImageFile outputImageFile" << std::endl;
@@ -663,7 +667,29 @@ int main( int argc, char* argv[] ){
 		agv.push_back(objects[remain4[i]].agv);
 		sd.push_back(objects[remain4[i]].sd);
 	}
+	
+	vector<vector<double>> features;
+	vector<double> temp4(10);
 
+	for(int i = 0; i < remain4.size(); i++){
+		temp4.push_back(volume[i]);
+		temp4.push_back(surfaceArea[i]);
+		temp4.push_back(agv[i]);
+		temp4.push_back(sd[i]);
+		temp4.push_back(area[i]);
+		temp4.push_back(perimeter[i]);
+		temp4.push_back(circularity[i]);
+		temp4.push_back(a[i]);
+		temp4.push_back(b[i]);
+		temp4.push_back(eccentricity[i]);
+		features.push_back(temp4);
+		temp4.clear();
+	}
+
+	std::ofstream file("C:\\downloads\\features.txt");
+	boost::archive::text_oarchive oa(file);
+	oa & BOOST_SERIALIZATION_NVP(features);
+	
 	try{
 		joinSeries->Update();
 	} catch (itk::ExceptionObject &excp){
