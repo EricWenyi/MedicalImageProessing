@@ -668,8 +668,7 @@ int main( int argc, char* argv[] ){
 		sd.push_back(objects[remain4[i]].sd);
 	}
 	
-	vector<vector<double>> features;
-	vector<double> temp4(10);
+	vector<double> temp4;
 
 	for(int i = 0; i < remain4.size(); i++){
 		temp4.push_back(volume[i]);
@@ -682,13 +681,14 @@ int main( int argc, char* argv[] ){
 		temp4.push_back(a[i]);
 		temp4.push_back(b[i]);
 		temp4.push_back(eccentricity[i]);
-		features.push_back(temp4);
-		temp4.clear();
 	}
+
+	temp4.push_back(remain4.size());
+	temp4.push_back(10);
 
 	std::ofstream file("C:\\downloads\\features.txt");
 	boost::archive::text_oarchive oa(file);
-	oa & BOOST_SERIALIZATION_NVP(features);
+	oa & BOOST_SERIALIZATION_NVP(temp4);
 	
 	try{
 		joinSeries->Update();
