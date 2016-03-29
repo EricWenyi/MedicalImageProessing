@@ -1,16 +1,28 @@
-//#include "stdafx.h"
-#define Dia 3
 #include <iostream>
 #include <contrib\contrib.hpp>
 #include <cxcore.hpp>
+
+
+
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
+#include <boost/serialization/vector.hpp>
+
+#include <string>
+#include <vector>
+#include <iostream>
+#include <sstream>  
+#include <fstream>
+
+
 using namespace cv;
 using namespace std;
 
 
 //type:CV_64FC1
 //clacEivectorAndCenter(训练集，训练集每个元素的数据类型，标签，特征向量，投影中心，训练集的size);
-int calcEivectorAndCenter(double data[][Dia],int type,vector<int>& labels,Mat& eivector,vector<Mat>& cluster,int sizeA,int sizeB){
-	Mat mat=Mat(sizeA,sizeB,CV_64FC1,data);
+int calcEivectorAndCenter(vector<double> data,int type,vector<int>& labels,Mat& eivector,vector<Mat>& cluster,int sizeA,int sizeB){
+	Mat mat=Mat(sizeA,sizeB,CV_64FC1,&data[0],sizeB);//一维数组转二维mat
 	
 	LDA lda=LDA(mat,labels);
 	eivector=lda.eigenvectors().clone();
@@ -75,14 +87,13 @@ int calcEivectorAndCenter(double data[][Dia],int type,vector<int>& labels,Mat& e
 	
 }
 
-//classDetermination(预测集，注明第二维维度，也就是特征个数 data[][Dia],元素精度,特征向量,归属,投影中心,尺寸)
-int classDetermination(double data[][Dia],int type,Mat& eivector,vector<int>& classBelongings,vector<Mat>& cluster,int sizeA,int sizeB){
+//classDetermination(预测集,元素精度,特征向量,归属,投影中心,尺寸)
+int classDetermination(vector<double> data,int type,Mat& eivector,vector<int>& classBelongings,vector<Mat>& cluster,int sizeA,int sizeB){
     vector<Mat> result(sizeA);
-
 
 	for(int i=0;i<sizeA;i++){
 		result[i]=Mat::zeros(1,1,type);
-		Mat dataArray=Mat(1,Dia,CV_64FC1,data[i]);
+		Mat dataArray=Mat(1,sizeB,CV_64FC1,&data[i*sizeB]);
 //		for(int j=0;j<2;j++)
 //			printf("dataArry[%d]=%f",j,dataArray.at<double>(j));
 		multiply(eivector.t(),dataArray,result[i]);
@@ -103,16 +114,30 @@ int classDetermination(double data[][Dia],int type,Mat& eivector,vector<int>& cl
 }
 
 
+
+
 int main(){
-	double sampledata[6][3]={{0,1,1},{0,2,1},{2,4,3},{8,0,1},{8,2,1},{9,4,3}};
+	//导入
+	std::ifstream file("C:\\Users\\TIAN\\Documents\\Tencent Files\\449006518\\FileRecv\\features.txt");
+	boost::archive::text_iarchive ia(file);
+	std::vector<double> features;
+	ia & BOOST_SERIALIZATION_NVP(features);
+	//导入结束
+	//for(int i=0;i<features.size();i++){
+	//	for(int j=0;j<features[i].size();j++)
+	//	std::cout<<features[i][j]<<std::endl;
+	//}
+    
+
+	//double sampledata[6][3]={{0,1,1},{0,2,1},{2,4,3},{8,0,1},{8,2,1},{9,4,3}};
 	int type=0;
 
 	
 	//labels
 	vector<int>labels;
-	for(int i=0;i<6;i++)
+	for(int i=0;i<2;i++)
 	{
-		if(i<6/2)
+		if(i<1)
 		{
 			labels.push_back(0);
 		}
@@ -121,17 +146,33 @@ int main(){
 			labels.push_back(1);
 		}
 	}
+
+	int sizeA=features[features.size()-1];
+	int sizeB=features[features.size()-2];
+	features.erase(features.end());
+	features.erase(features.end());
+
 	Mat eivector;
-	vector<Mat> cluster(2);
-	int sizeA=6;
-    int sizeB=3;
+	vector<Mat> cluster(features.size());
 
-	calcEivectorAndCenter(sampledata,type,labels,eivector,cluster,sizeA,sizeB);
-	vector<int> classBelongings(4);
+	calcEivectorAndCenter(features,type,labels,eivector,cluster,sizeA,sizeB);
+	//calcEivectorAndCenter(sampledata,type,labels,eivector,cluster,sizeA,sizeB);
+	
+	
+	vector<int> classBelongings(2);
 
-	double testData[4][3]={{2,4,3},{10,0,1},{8,2,3},{9,4,2}};
-	classDetermination(testData,type,eivector,classBelongings,cluster,4,sizeB);
-	for(int i=0;i<4;i++){
+
+	vector<double> vTestData(20);
+	for(int i=0;i<20;i++){
+		if(i<10){
+			vTestData.push_back(0);
+		}else{
+			vTestData.push_back(10);
+		}
+	}
+
+	classDetermination(vTestData,type,eivector,classBelongings,cluster,2,sizeB);
+	for(int i=0;i<2;i++){
 		printf("|%d\t",classBelongings[i]);
 	}
 	return 0;
