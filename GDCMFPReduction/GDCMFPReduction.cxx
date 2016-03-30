@@ -252,6 +252,11 @@ int main( int argc, char* argv[] ){
 				counter = -1;
 
 				if(nowC != temp2[i].c){
+					if(nowC != -1){
+						for(int j = 0; j < temp3[nowC].point.size(); j++){
+							temp2[i - 1 - j].label = temp3[nowC].label;
+						}
+					}
 					nowC = temp2[i].c;
 					zeroCounter = 0;
 					if(temp2[i].label == -1){
@@ -483,7 +488,7 @@ int main( int argc, char* argv[] ){
 			}
 		}
 
-		for(int i = 0; i < remain4.size(); i++){
+		for(int i = 0; i < contourToDraw.size(); i++){
 			drawContours(drawing, contourToDraw, i, Scalar(i + 1), CV_FILLED, 8, noArray(), 0, Point(0, 0));
 		}
 
@@ -552,7 +557,7 @@ int main( int argc, char* argv[] ){
 			}
 		}
 
-		for(int i = 0; i < remain4.size(); i++){
+		for(int i = 0; i < contourToDraw.size(); i++){
 			drawContours(drawing, contourToDraw, i, Scalar(i + 1), CV_FILLED, 8, noArray(), 0, Point(0, 0));
 		}
 
@@ -562,7 +567,6 @@ int main( int argc, char* argv[] ){
 			for(int j = 0; j < drawing.rows; j++){
 				if(drawing.at<unsigned short>(j, i) != 0){
 					objects[remain4[drawing.at<unsigned short>(j, i) - 1]].sd += (origin.at<signed short>(j, i) - objects[remain4[drawing.at<unsigned short>(j, i) - 1]].agv) * (origin.at<signed short>(j, i) - objects[remain4[drawing.at<unsigned short>(j, i) - 1]].agv);
-					objects[remain4[drawing.at<unsigned short>(j, i) - 1]].count++;
 				}
 			}
 		}
@@ -667,7 +671,7 @@ int main( int argc, char* argv[] ){
 		agv.push_back(objects[remain4[i]].agv);
 		sd.push_back(objects[remain4[i]].sd);
 	}
-	
+
 	vector<double> temp4;
 
 	for(int i = 0; i < remain4.size(); i++){
