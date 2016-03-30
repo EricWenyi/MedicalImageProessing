@@ -479,20 +479,20 @@ int main( int argc, char* argv[] ){
 		Mat origin = itk::OpenCVImageBridge::ITKImageToCVMat< ImageType2D >( extractor->GetOutput() );
 
 		vector<vector<Point>> contourToDraw;
+		vector<int> index;
 
 		for(int i = 0; i < remain4.size(); i++){
 			for(int j = 0; j < objects[remain4[i]].contour.size(); j++){
 				if(objects[remain4[i]].contour[j].slice == sliceIndex[2]){
 					contourToDraw.push_back(objects[remain4[i]].contour[j].point);
+					index.push_back(i);
 				}
 			}
-		}
-
+		} 
+		
 		for(int i = 0; i < contourToDraw.size(); i++){
-			drawContours(drawing, contourToDraw, i, Scalar(i + 1), CV_FILLED, 8, noArray(), 0, Point(0, 0));
+			drawContours(drawing, contourToDraw, i, Scalar(index[i] + 1), CV_FILLED, 8, noArray(), 0, Point(0, 0));
 		}
-
-		contourToDraw.clear();
 
 		for(int i = 0; i < drawing.cols; i++){
 			for(int j = 0; j < drawing.rows; j++){
@@ -548,20 +548,20 @@ int main( int argc, char* argv[] ){
 		Mat origin = itk::OpenCVImageBridge::ITKImageToCVMat< ImageType2D >( extractor->GetOutput() );
 
 		vector<vector<Point>> contourToDraw;
+		vector<int> index;
 
 		for(int i = 0; i < remain4.size(); i++){
 			for(int j = 0; j < objects[remain4[i]].contour.size(); j++){
 				if(objects[remain4[i]].contour[j].slice == sliceIndex[2]){
 					contourToDraw.push_back(objects[remain4[i]].contour[j].point);
+					index.push_back(i);
 				}
 			}
 		}
 
 		for(int i = 0; i < contourToDraw.size(); i++){
-			drawContours(drawing, contourToDraw, i, Scalar(i + 1), CV_FILLED, 8, noArray(), 0, Point(0, 0));
+			drawContours(drawing, contourToDraw, i, Scalar(index[i] + 1), CV_FILLED, 8, noArray(), 0, Point(0, 0));
 		}
-
-		contourToDraw.clear();
 
 		for(int i = 0; i < drawing.cols; i++){
 			for(int j = 0; j < drawing.rows; j++){
