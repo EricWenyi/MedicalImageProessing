@@ -25,7 +25,7 @@ int calcEivectorAndCenter(vector<double> data,int type,vector<int>& labels,Mat& 
 	Mat mat=Mat(sizeA,sizeB,CV_64FC1,&data[0]);//一维数组转二维mat
 	cout << "M = "<< endl << " "  << mat << endl << endl;
 	LDA lda=LDA(mat,labels);
-	eivector=lda.eigenvectors().clone();
+	eivector=lda.eigenvectors().clone();//得到特征向量W
 	cout<<"The eigenvector is:"<<endl;
 	for(int i=0;i<eivector.rows;i++)
 	{
@@ -67,14 +67,14 @@ int calcEivectorAndCenter(vector<double> data,int type,vector<int>& labels,Mat& 
 	}
 	for(int i=0;i<classNum;i++)
 	{
-		classmean[i].convertTo(classmean[i],CV_64FC1,1.0/static_cast<double>(setNum[i]));
+		classmean[i].convertTo(classmean[i],CV_64FC1,1.0/static_cast<double>(setNum[i])); //取均值算数据中心
 	}
 	type=mat.type();
 	//vector<Mat> cluster(classNum);
 	for(int i=0;i<classNum;i++)
 	{
 		cluster[i]=Mat::zeros(1,1,mat.type());
-		multiply(eivector.t(),classmean[i],cluster[i]);
+		multiply(eivector.t(),classmean[i],cluster[i]);//向量相乘计算投影到一维特征向量上的数据中心值
 	}
 
 	cout<<"The project cluster center is:"<<endl;
@@ -93,10 +93,10 @@ int classDetermination(vector<double> data,int type,Mat& eivector,vector<int>& c
 
 	for(int i=0;i<sizeA;i++){
 		result[i]=Mat::zeros(1,1,type);
-		Mat dataArray=Mat(1,sizeB,CV_64FC1,&(data[i*sizeB]));
+		Mat dataArray=Mat(1,sizeB,CV_64FC1,&(data[i*sizeB])); //取每一个样本的每一组特征
 		/*for(int j=0;j<10;j++)
 			printf("dataArry[%d]=%f|%f",j,dataArray.at<double>(j),data[i*sizeB+j]);*/
-		multiply(eivector.t(),dataArray,result[i]);
+		multiply(eivector.t(),dataArray,result[i]); //计算投影至特征向量维度后的值
 		printf("result[%d]=%f\n",i,result[i].at<double>(0));
 	}
 
@@ -105,7 +105,7 @@ int classDetermination(vector<double> data,int type,Mat& eivector,vector<int>& c
 	//vector<int> classBelongings(sizeA);
 	for(int i=0;i<sizeA;i++){
 		if((result[i].at<double>(0)-cluster[0].at<double>(0))*(result[i].at<double>(0)-cluster[0].at<double>(0))<(result[i].at<double>(0)-cluster[1].at<double>(0))*(result[i].at<double>(0)-cluster[1].at<double>(0)))
-		classBelongings[i]=0;
+		classBelongings[i]=0;//根据离两个中心的距离判定归属
 	    else
 		classBelongings[i]=1;
 	}
@@ -119,7 +119,7 @@ int classDetermination(vector<double> data,int type,Mat& eivector,vector<int>& c
 int main(){
 	//导入
 	std::ifstream file("C:\\Users\\TIAN\\Documents\\Tencent Files\\449006518\\FileRecv\\features.txt");
-	boost::archive::text_iarchive ia(file);
+	boost::archive::text_iarchive ia(file); //数据的导入，反序列化
 	std::vector<double> features;
 	ia & BOOST_SERIALIZATION_NVP(features);
 	////导入结束
@@ -147,9 +147,9 @@ int main(){
 		}
 	}
 
-	int sizeA=features[features.size()-2];
+	int sizeA=features[features.size()-2]; //提取当前数据集的参数，分别是数据集内含有的样本数，每个样本的特征数
 	int sizeB=features[features.size()-1];
-	features.erase(features.begin()+(features.size()-2));
+	features.erase(features.begin()+(features.size()-2)); //直接删除参数，剩下只剩样本的向量送进模块训练
 	features.erase(features.begin()+(features.size()-1));
 
 	Mat eivector;
