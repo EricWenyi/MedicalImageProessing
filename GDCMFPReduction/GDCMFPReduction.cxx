@@ -141,21 +141,6 @@ int main( int argc, char* argv[] ){
 		vector<Vec4i> hierarchy;
 		findContours( img, contour, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_NONE, Point(0, 0) );
 
-		/*
-		vector<vector<Point>> set(contour.size());
-		for(int i = 0; i < img.cols; i++){
-			for(int j = 0; j < img.rows; j++){
-				if(img.at<uchar>(j, i) != 0){
-					for(int k = 0; k < contour.size(); k++){
-						if(pointPolygonTest(contour[k], Point(j, i), false) != -1){
-							set[k].push_back(Point(j, i));
-						}
-					}
-				}
-			}
-		}
-		*/
-
 		if(sliceIndex[2] == 0){
 			for(int i = 0; i < contour.size(); i++){
 				aContour.label = labelCounter;
@@ -250,6 +235,8 @@ int main( int argc, char* argv[] ){
 				}
 
 				counter = -1;
+				
+				vector<int> labels;
 
 				if(nowC != temp2[i].c){
 					if(nowC != -1){
@@ -257,12 +244,23 @@ int main( int argc, char* argv[] ){
 							temp2[i - 1 - j].label = temp3[nowC].label;
 						}
 					}
+
+					for(int j = 0; j < temp1.size(); j++){
+						for(int k = 1; k < labels.size(); k++){
+							if(temp1[j].label == labels[k]){
+								temp1[j].label = labels[0];
+							}
+						}
+					}
+
 					nowC = temp2[i].c;
 					zeroCounter = 0;
+
 					if(temp2[i].label == -1){
 						zeroCounter++;
 					} else {
 						temp3[nowC].label = temp2[i].label;
+						labels.push_back(temp3[nowC].label);
 					}
 				} else if (temp2[i].label == -1){
 					zeroCounter++;
@@ -270,8 +268,17 @@ int main( int argc, char* argv[] ){
 						temp3[nowC].label = labelCounter;
 						labelCounter++;
 					}
-				} else if (temp3[nowC].label == -1){
-					temp3[nowC].label = temp2[i].label;
+				} else {
+					if (temp3[nowC].label == -1){
+						temp3[nowC].label = temp2[i].label;
+						labels.push_back(temp3[nowC].label);
+					}
+
+					for(int j = 0; j < labels.size(); j++){
+						if(temp2[i].label != labels[j]){
+							labels.push_back(temp2[i].label);
+						}
+					}
 				}
 			}
 
