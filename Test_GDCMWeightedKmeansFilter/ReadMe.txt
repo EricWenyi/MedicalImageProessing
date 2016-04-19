@@ -1,0 +1,1 @@
+这是测试我们自己的weighted-kmeans用的 其实可以把它从github上删了，但是删了可能我的contribution就下来了，所以我选择不删。（hhhhhhhhhhh我就是这么心机）
