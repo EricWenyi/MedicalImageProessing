@@ -64,17 +64,12 @@ int main( int argc, char* argv[] ){
 		printf( "Slice Index --- %d ---", tempInCounter++ );
 		ExtractFilterType::InputImageRegionType::SizeType sliceSize = inIterator.GetRegion().GetSize();
 		sliceSize[2] = 0;
-
-		if( tempInCounter > 46 && tempInCounter < 106 ){
-			//根据切片所在位置设定不同的参数
-			//找出有效slice区间
-			//确定每个分区参数
-			//无效区1-12 106-150
-			//12-46 47-97 98-105
+		
+		if( tempInCounter > (int)(1/3.0f * inIterator.GetRegion().GetSize()[2]) && tempInCounter < (int)(2/3.0f * inIterator.GetRegion().GetSize()[2]) ){
 			startX1 = 100;
 			startX2 = 400;
-			startY1 = 256;
-			startY2 = 256;
+			startY1 = 250;
+			startY2 = 250;
 			perimeter = 600.0f;
 			area = 10000.0f;
 		}
