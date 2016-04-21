@@ -577,17 +577,6 @@ int main( int argc, char* argv[] ){
 				}
 			}
 		}
-		/*
-		ImageType2D::Pointer itkDrawing;
-		try{
-			itkDrawing=itk::OpenCVImageBridge::CVMatToITKImage< ImageType2D >( drawing );
-		} catch (itk::ExceptionObject &excp){
-			std::cerr << "Exception: CVMatToITKImage failure !" << std::endl;
-			std::cerr << excp << std::endl;
-			return EXIT_FAILURE;
-		}
-		joinSeries->PushBackInput( itkDrawing );
-		*/
 	}
 
 	for(int i = 0; i < remain4.size(); i++){
@@ -679,28 +668,85 @@ int main( int argc, char* argv[] ){
 		sd.push_back(objects[remain4[i]].sd);
 	}
 
-	vector<double> temp4;
+	vector<AnObject> remains;
+	vector<int> labels(remain4.size());
 
 	for(int i = 0; i < remain4.size(); i++){
-		temp4.push_back(volume[i]);
-		temp4.push_back(surfaceArea[i]);
-		temp4.push_back(agv[i]);
-		temp4.push_back(sd[i]);
-		temp4.push_back(area[i]);
-		temp4.push_back(perimeter[i]);
-		temp4.push_back(circularity[i]);
-		temp4.push_back(a[i]);
-		temp4.push_back(b[i]);
-		temp4.push_back(eccentricity[i]);
+		remains.push_back(objects[remain4[i]]);
+		labels[i] = 0;
 	}
 
-	temp4.push_back(remain4.size());
-	temp4.push_back(10);
-
-	std::ofstream file("C:\\downloads\\features.txt");
-	boost::archive::text_oarchive oa(file);
-	oa & BOOST_SERIALIZATION_NVP(temp4);
+	int slice = 0, X = 322, Y = 266;
 	
+	//input patients' nodule information
+
+	for(int i = 0; i < remains.size(); i++){
+		for(int j = 0; j < remains[i].contour.size(); j++){
+			if(remains[i].contour[j].slice == slice){
+				if(pointPolygonTest(remains[i].contour[j].point, Point(X, Y), false) != -1){
+					labels[i] = 1;
+				}
+			}
+		}
+	}
+
+	std::ofstream file1("C:\\downloads\\labels.txt");
+	boost::archive::text_oarchive oa1(file1);
+	oa1 & BOOST_SERIALIZATION_NVP(labels);
+
+	vector<double> features;
+
+	for(int i = 0; i < remain4.size(); i++){
+		features.push_back(volume[i]);
+		features.push_back(surfaceArea[i]);
+		features.push_back(agv[i]);
+		features.push_back(sd[i]);
+		features.push_back(area[i]);
+		features.push_back(perimeter[i]);
+		features.push_back(circularity[i]);
+		features.push_back(a[i]);
+		features.push_back(b[i]);
+		features.push_back(eccentricity[i]);
+	}
+
+	features.push_back(remain4.size());
+	features.push_back(10);
+
+	std::ofstream file2("C:\\downloads\\features.txt");
+	boost::archive::text_oarchive oa2(file2);
+	oa2 & BOOST_SERIALIZATION_NVP(features);
+	
+	//LDA
+
+	//draw the result
+
+	for( noduleIterator.GoToBegin(); !noduleIterator.IsAtEnd(); noduleIterator.NextSlice() ){
+		ImageType3D::IndexType sliceIndex = noduleIterator.GetIndex();
+		printf( "Slice Index --- %d ---\n", sliceIndex[2] );
+		ExtractFilterType::InputImageRegionType::SizeType sliceSize = noduleIterator.GetRegion().GetSize();
+		sliceSize[2] = 0;
+		
+		ExtractFilterType::InputImageRegionType sliceRegion = noduleIterator.GetRegion();
+		sliceRegion.SetSize( sliceSize );
+		sliceRegion.SetIndex( sliceIndex );
+
+		ExtractFilterType::Pointer extractor = ExtractFilterType::New();
+		extractor->SetExtractionRegion( sliceRegion );
+		extractor->InPlaceOn();
+		extractor->SetDirectionCollapseToSubmatrix();
+		extractor->SetInput( noduleReader->GetOutput() );
+
+		try{
+			extractor->Update();
+		} catch (itk::ExceptionObject &excp){
+			std::cerr << "ExceptionObject: extractor->Update() caught !" << std::endl;
+			std::cerr << excp << std::endl;
+			return EXIT_FAILURE;
+		}
+		
+		joinSeries->PushBackInput( extractor->GetOutput() );
+	}
+		
 	try{
 		joinSeries->Update();
 	} catch (itk::ExceptionObject &excp){
