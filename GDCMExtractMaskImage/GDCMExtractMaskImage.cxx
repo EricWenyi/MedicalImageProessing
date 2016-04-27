@@ -51,13 +51,14 @@ int main( int argc, char* argv[] ){
 	joinSeries->SetSpacing( originImage3D->GetSpacing()[2] );
 
 	int tempInCounter = 1;
-	double perimeter = 100.0f;
-	double area = 1000.0f;
 
-	int startX1 = 200;
-	int startX2 = 300;
-	int startY1 = 300;
-	int startY2 = 300; 
+	double perimeter;
+	double area;
+
+	int startX1;
+	int startX2;
+	int startY1;
+	int startY2; 
 
 	for( inIterator.GoToBegin(); !inIterator.IsAtEnd(); inIterator.NextSlice() ){
 		ImageType3D::IndexType sliceIndex = inIterator.GetIndex();
@@ -72,6 +73,13 @@ int main( int argc, char* argv[] ){
 			startY2 = 250;
 			perimeter = 600.0f;
 			area = 10000.0f;
+		} else {
+			startX1 = 150;
+			startX2 = 350;
+			startY1 = 350;
+			startY2 = 350;
+			perimeter = 100.0f;
+			area = 1000.0f;
 		}
 
 		ExtractFilterType::InputImageRegionType sliceRegion = inIterator.GetRegion();
