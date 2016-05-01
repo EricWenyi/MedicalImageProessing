@@ -70,7 +70,9 @@ int main( int argc, char* argv[] ){
 	joinSeries->SetSpacing( noduleImage3D->GetSpacing()[2] );
 
 	using namespace cv;
-
+	//我们在这里创建了3个数据结构，第一个是APoint用于存放每一个在contour(轮廓)上的点的信息
+	//第二个是AContour,用来存放contour的各类信息以及contour包含的点
+	//第三个是AnObject(在下面，往下翻) ，用来存放各个结节的信息以及nodule包含的contour
 	struct APoint{
 		int c;
 		int x;
