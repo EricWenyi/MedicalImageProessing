@@ -12,6 +12,8 @@
 #include <boost\archive\text_oarchive.hpp>
 #include <boost\serialization\vector.hpp>
 
+#include "minicsv.h"
+
 int main( int argc, char* argv[] ){
 	if( argc < 4 ){
 		std::cerr << "Usage: " << argv[0] << "noduleImageFile originImageFile outputImageFile" << std::endl;
@@ -70,9 +72,7 @@ int main( int argc, char* argv[] ){
 	joinSeries->SetSpacing( noduleImage3D->GetSpacing()[2] );
 
 	using namespace cv;
-	//我们在这里创建了3个数据结构，第一个是APoint用于存放每一个在contour(轮廓)上的点的信息
-	//第二个是AContour,用来存放contour的各类信息以及contour包含的点
-	//第三个是AnObject(在下面，往下翻) ，用来存放各个结节的信息以及nodule包含的contour
+
 	struct APoint{
 		int c;
 		int x;
@@ -305,7 +305,12 @@ int main( int argc, char* argv[] ){
 		int label;
 		int z;
 		int count;
+		double mArea;
+		double mP;
 		double mC;
+		double mA;
+		double mB;
+		double mE;
 		double volume;
 		double surfaceArea;
 		double agv;
@@ -323,7 +328,12 @@ int main( int argc, char* argv[] ){
 				anObject.label = contours[i][j].label;
 				anObject.z = 1;
 				anObject.count = 0;
+				anObject.mArea = -1;
+				anObject.mP = -1;
 				anObject.mC = -1;
+				anObject.mA = -1;
+				anObject.mB = -1;
+				anObject.mE = -1;
 				anObject.volume = 0.0f;
 				anObject.surfaceArea = 0.0f;
 				anObject.agv = 0.0f;
@@ -344,9 +354,30 @@ int main( int argc, char* argv[] ){
 						}
 						
 						objects[k].contour.push_back(contours[i][j]);
+
+						if(contours[i][j].area > objects[k].mArea){
+							objects[k].mArea = contours[i][j].area;
+						}
+
+						if(contours[i][j].perimeter > objects[k].mP){
+							objects[k].mP = contours[i][j].perimeter;
+						}
+
 						if(4 * 3.1415926f * contours[i][j].area / contours[i][j].perimeter / contours[i][j].perimeter > objects[k].mC){
 							objects[k].mC = 4 * 3.1415926f * contours[i][j].area / contours[i][j].perimeter / contours[i][j].perimeter;
 						}
+
+						if(contours[i][j].a > objects[k].mA){
+							objects[k].mA = contours[i][j].a;
+						}
+
+						if(contours[i][j].b > objects[k].mB){
+							objects[k].mB = contours[i][j].b;
+						}
+
+						if(sqrt(1 - (contours[i][j].b * contours[i][j].b / contours[i][j].a / contours[i][j].a)) > objects[k].mE){
+							objects[k].mE = sqrt(1 - (contours[i][j].b * contours[i][j].b / contours[i][j].a / contours[i][j].a));
+						}	
 					} else {
 						tempCounter++;
 					}
@@ -358,7 +389,12 @@ int main( int argc, char* argv[] ){
 					anObject.label = contours[i][j].label;
 					anObject.z = 1;
 					anObject.count = 0;
+					anObject.mArea = -1;
+					anObject.mP = -1;
 					anObject.mC = -1;
+					anObject.mA = -1;
+					anObject.mB = -1;
+					anObject.mE = -1;
 					anObject.volume = 0.0f;
 					anObject.surfaceArea = 0.0f;
 					anObject.agv = 0.0f;
@@ -585,67 +621,7 @@ int main( int argc, char* argv[] ){
 		objects[remain4[i]].sd = sqrt(objects[remain4[i]].sd / objects[remain4[i]].count);
 	}
 
-	vector<double> area, perimeter, circularity, a, b, eccentricity, volume, surfaceArea, agv, sd;
-	double max = -1.0f;
-
-	for(int i = 0; i < remain4.size(); i++){
-		for(int j = 0; j < objects[remain4[i]].contour.size(); j++){
-			if(objects[remain4[i]].contour[j].area > max){
-				max = objects[remain4[i]].contour[j].area;
-			}
-		}
-		area.push_back(max);
-	}
-
-	max = -1;
-
-	for(int i = 0; i < remain4.size(); i++){
-		for(int j = 0; j < objects[remain4[i]].contour.size(); j++){
-			if(objects[remain4[i]].contour[j].perimeter > max){
-				max = objects[remain4[i]].contour[j].perimeter;
-			}
-		}
-		perimeter.push_back(max);
-	}
-
-	for(int i = 0; i < remain4.size(); i++){
-		circularity.push_back(objects[remain4[i]].mC);
-	}
-
-	max = -1;
-
-	for(int i = 0; i < remain4.size(); i++){
-		for(int j = 0; j < objects[remain4[i]].contour.size(); j++){
-			if(objects[remain4[i]].contour[j].a > max){
-				max = objects[remain4[i]].contour[j].a;
-			}
-		}
-		a.push_back(max);
-	}
-
-	max = -1;
-
-	for(int i = 0; i < remain4.size(); i++){
-		for(int j = 0; j < objects[remain4[i]].contour.size(); j++){
-			if(objects[remain4[i]].contour[j].b > max){
-				max = objects[remain4[i]].contour[j].b;
-			}
-		}
-		b.push_back(max);
-	}
-
-	max = -1;
-
-	for(int i = 0; i < remain4.size(); i++){
-		for(int j = 0; j < objects[remain4[i]].contour.size(); j++){
-			if(sqrt(1 - (objects[remain4[i]].contour[j].b * objects[remain4[i]].contour[j].b / objects[remain4[i]].contour[j].a / objects[remain4[i]].contour[j].a)) > max){
-				max = sqrt(1 - (objects[remain4[i]].contour[j].b * objects[remain4[i]].contour[j].b / objects[remain4[i]].contour[j].a / objects[remain4[i]].contour[j].a));
-			}
-		}
-		eccentricity.push_back(max);
-	}
-
-	max = -1;
+	vector<double> volume, surfaceArea, agv, sd, area, perimeter, circularity, a, b, eccentricity;
 
 	for(int i = 0; i < remain4.size(); i++){
 		for(int j = 0; j < objects[remain4[i]].contour.size(); j++){
@@ -668,6 +644,12 @@ int main( int argc, char* argv[] ){
 		surfaceArea.push_back(objects[remain4[i]].surfaceArea);
 		agv.push_back(objects[remain4[i]].agv);
 		sd.push_back(objects[remain4[i]].sd);
+		area.push_back(objects[remain4[i]].mArea);
+		perimeter.push_back(objects[remain4[i]].mP);
+		circularity.push_back(objects[remain4[i]].mC);
+		a.push_back(objects[remain4[i]].mA);
+		b.push_back(objects[remain4[i]].mB);
+		eccentricity.push_back(objects[remain4[i]].mE);
 	}
 
 	vector<AnObject> remains;
@@ -718,6 +700,13 @@ int main( int argc, char* argv[] ){
 	boost::archive::text_oarchive oa2(file2);
 	oa2 & BOOST_SERIALIZATION_NVP(features);
 	
+	csv::ofstream os("C:\\downloads\\features.csv");
+	os.set_delimiter(',', "EOF");
+	for(int i = 0; i < remain4.size(); i++){
+		os << volume[i] << surfaceArea[i] << agv[i] << sd[i] << area[i] << perimeter[i] << circularity[i] << a[i] << b[i] << eccentricity[i] << NEWLINE;
+	}
+	os.flush();
+
 	//LDA
 
 	//draw the result
