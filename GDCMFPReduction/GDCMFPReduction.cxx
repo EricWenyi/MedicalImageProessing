@@ -8,10 +8,6 @@
 #include "itkConstNeighborhoodIterator.h"
 #include "itkOpenCVImageBridge.h"
 
-#include "boost\archive\text_iarchive.hpp"
-#include "boost\archive\text_oarchive.hpp"
-#include "boost\serialization\vector.hpp"
-
 #include "minicsv.h"
 
 int main( int argc, char* argv[] ){
@@ -705,37 +701,11 @@ int main( int argc, char* argv[] ){
 			}
 		}
 	}
-
-	std::ofstream file1("C:\\downloads\\labels.txt");
-	boost::archive::text_oarchive oa1(file1);
-	oa1 & BOOST_SERIALIZATION_NVP(labels);
-
-	vector<double> features;
-
-	for(int i = 0; i < remain5.size(); i++){
-		features.push_back(volume[i]);
-		features.push_back(surfaceArea[i]);
-		features.push_back(agv[i]);
-		features.push_back(sd[i]);
-		features.push_back(area[i]);
-		features.push_back(perimeter[i]);
-		features.push_back(circularity[i]);
-		features.push_back(a[i]);
-		features.push_back(b[i]);
-		features.push_back(eccentricity[i]);
-	}
-
-	features.push_back(remain5.size());
-	features.push_back(10);
-
-	std::ofstream file2("C:\\downloads\\features.txt");
-	boost::archive::text_oarchive oa2(file2);
-	oa2 & BOOST_SERIALIZATION_NVP(features);
 	
 	csv::ofstream os("C:\\downloads\\features.csv");
 	os.set_delimiter(',', "EOF");
 	for(int i = 0; i < remain5.size(); i++){
-		os << volume[i] << surfaceArea[i] << agv[i] << sd[i] << area[i] << perimeter[i] << circularity[i] << a[i] << b[i] << eccentricity[i] << NEWLINE;
+		os << volume[i] << surfaceArea[i] << agv[i] << sd[i] << area[i] << perimeter[i] << circularity[i] << a[i] << b[i] << eccentricity[i] << labels[i] << NEWLINE;
 	}
 	os.flush();
 
@@ -743,13 +713,13 @@ int main( int argc, char* argv[] ){
 
 	//draw the result
 
-	for( noduleIterator.GoToBegin(); !noduleIterator.IsAtEnd(); noduleIterator.NextSlice() ){
-		ImageType3D::IndexType sliceIndex = noduleIterator.GetIndex();
+	for( originIterator.GoToBegin(); !originIterator.IsAtEnd(); originIterator.NextSlice() ){
+		ImageType3D::IndexType sliceIndex = originIterator.GetIndex();
 		printf( "Slice Index --- %d ---\n", sliceIndex[2] );
-		ExtractFilterType::InputImageRegionType::SizeType sliceSize = noduleIterator.GetRegion().GetSize();
+		ExtractFilterType::InputImageRegionType::SizeType sliceSize = originIterator.GetRegion().GetSize();
 		sliceSize[2] = 0;
 		
-		ExtractFilterType::InputImageRegionType sliceRegion = noduleIterator.GetRegion();
+		ExtractFilterType::InputImageRegionType sliceRegion = originIterator.GetRegion();
 		sliceRegion.SetSize( sliceSize );
 		sliceRegion.SetIndex( sliceIndex );
 
@@ -757,7 +727,7 @@ int main( int argc, char* argv[] ){
 		extractor->SetExtractionRegion( sliceRegion );
 		extractor->InPlaceOn();
 		extractor->SetDirectionCollapseToSubmatrix();
-		extractor->SetInput( noduleReader->GetOutput() );
+		extractor->SetInput( originReader->GetOutput() );
 
 		try{
 			extractor->Update();
