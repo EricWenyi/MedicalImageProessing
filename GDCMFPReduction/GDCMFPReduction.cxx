@@ -441,52 +441,40 @@ int main( int argc, char* argv[] ){
 	
 	nowL = -1;
 
-	for(int i = 0; i < objects.size(); i++){
-		if(objects[i].mC > 0.2f){
-			for(int j = 0; j < remain1.size(); j++){
-				if(i == remain1[j]){
-					if(nowL != i){
-						remain2.push_back(i);
-						nowL = i;
-					}
-				}
+	for(int i = 0; i < remain1.size(); i++){
+		if(objects[remain1[i]].mC > 0.2f){
+			if(nowL != remain1[i]){
+				remain2.push_back(remain1[i]);
+				nowL = i;
 			}
 		}
 	}
 
 	nowL = -1;
 
-	for(int i = 0; i < objects.size(); i++){
-		for(int j = 0; j < objects[i].contour.size(); j++){
-			if(objects[i].contour[j].boundingArea / objects[i].contour[j].area <= 2.0f){
+	for(int i = 0; i < remain2.size(); i++){
+		for(int j = 0; j < objects[remain2[i]].contour.size(); j++){
+			if(objects[remain2[i]].contour[j].boundingArea / objects[remain2[i]].contour[j].area <= 2.0f){
 				tempCounter++;
 			}
 		}
 		
-		if(tempCounter == objects[i].contour.size()){
-			for(int j = 0; j < remain2.size(); j++){
-				if(i == remain2[j]){
-					remain3.push_back(i);
-				}
-			}
+		if(tempCounter == objects[remain2[i]].contour.size()){
+			remain3.push_back(remain2[i]);
 		}
 		
 		tempCounter = 0;
 	}
 	
-	for(int i = 0; i < objects.size(); i++){
-		for(int j = 0; j < objects[i].contour.size(); j++){
-			if(objects[i].contour[j].a / objects[i].contour[j].b <= 3.0f){
+	for(int i = 0; i < remain3.size(); i++){
+		for(int j = 0; j < objects[remain3[i]].contour.size(); j++){
+			if(objects[remain3[i]].contour[j].a / objects[remain3[i]].contour[j].b <= 3.0f){
 				tempCounter++;
 			}
 		}
 		
-		if(tempCounter == objects[i].contour.size()){
-			for(int j = 0; j < remain3.size(); j++){
-				if(i == remain3[j]){
-					remain4.push_back(i);
-				}
-			}
+		if(tempCounter == objects[remain3[i]].contour.size()){
+			remain4.push_back(remain3[i]);
 		}
 		
 		tempCounter = 0;
@@ -495,14 +483,14 @@ int main( int argc, char* argv[] ){
 	Point2f tempCentroid1(-1, -1);
 	Point2f tempCentroid2(-1, -1);
 
-	for(int i = 0; i < objects.size(); i++){
-		for(int j = 0; j < objects[i].contour.size(); j++){
+	for(int i = 0; i < remain4.size(); i++){
+		for(int j = 0; j < objects[remain4[i]].contour.size(); j++){
 			if(j == 0){
-				tempCentroid1.x = objects[i].contour[j].centroid.x;
-				tempCentroid1.y = objects[i].contour[j].centroid.y;
+				tempCentroid1.x = objects[remain4[i]].contour[j].centroid.x;
+				tempCentroid1.y = objects[remain4[i]].contour[j].centroid.y;
 			} else {
-				tempCentroid2.x = objects[i].contour[j].centroid.x;
-				tempCentroid2.y = objects[i].contour[j].centroid.y;
+				tempCentroid2.x = objects[remain4[i]].contour[j].centroid.x;
+				tempCentroid2.y = objects[remain4[i]].contour[j].centroid.y;
 
 				if(sqrt((tempCentroid1.x - tempCentroid2.x) * (tempCentroid1.x - tempCentroid2.x) + (tempCentroid1.y - tempCentroid2.y) * (tempCentroid1.y - tempCentroid2.y)) < 3.0f){
 					tempCounter++;
@@ -515,12 +503,8 @@ int main( int argc, char* argv[] ){
 			}
 		}
 
-		if(tempCounter == objects[i].contour.size() - 1){
-			for(int j = 0; j < remain4.size(); j++){
-				if(i == remain4[j]){
-					remain5.push_back(i);
-				}
-			}
+		if(tempCounter == objects[remain4[i]].contour.size() - 1){
+			remain5.push_back(remain4[i]);
 		}
 
 		tempCounter = 0;
