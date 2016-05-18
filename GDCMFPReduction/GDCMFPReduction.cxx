@@ -8,9 +8,9 @@
 #include "itkConstNeighborhoodIterator.h"
 #include "itkOpenCVImageBridge.h"
 
-#include <boost\archive\text_iarchive.hpp>
-#include <boost\archive\text_oarchive.hpp>
-#include <boost\serialization\vector.hpp>
+#include "boost\archive\text_iarchive.hpp"
+#include "boost\archive\text_oarchive.hpp"
+#include "boost\serialization\vector.hpp"
 
 #include "minicsv.h"
 
@@ -94,6 +94,7 @@ int main( int argc, char* argv[] ){
 		double b;
 		int x;
 		int y;
+		Point2f centroid;
 		vector<Point> point;
 	};
 	AContour aContour;
@@ -161,17 +162,23 @@ int main( int argc, char* argv[] ){
 				aContour.boundingArea = minAreaRect(contour[i]).size.area();
 				aContour.x = boundingRect(contour[i]).height;
 				aContour.y = boundingRect(contour[i]).width;
+				aContour.centroid.x = 0.0f;
+				aContour.centroid.y = 0.0f;
 
 				for(int j = 0; j < contour[i].size(); j++){
 					aPoint.c = i;
 					aPoint.x = contour[i][j].x;
 					aPoint.y = contour[i][j].y;
+					aContour.centroid.x += aPoint.x;
+					aContour.centroid.y += aPoint.y;
 					aPoint.label = labelCounter;
 					temp1.push_back(aPoint);
 					aContour.point.push_back(contour[i][j]);
 				}
 
 				labelCounter++;
+				aContour.centroid.x /= contour[i].size();
+				aContour.centroid.y /= contour[i].size();
 				temp3.push_back(aContour);
 				aContour.point.clear();
 			}
@@ -196,16 +203,22 @@ int main( int argc, char* argv[] ){
 				aContour.boundingArea = minAreaRect(contour[i]).size.area();
 				aContour.x = boundingRect(contour[i]).height;
 				aContour.y = boundingRect(contour[i]).width;
+				aContour.centroid.x = 0.0f;
+				aContour.centroid.y = 0.0f;
 
 				for(int j = 0; j < contour[i].size(); j++){
 					aPoint.c = i;
 					aPoint.x = contour[i][j].x;
 					aPoint.y = contour[i][j].y;
+					aContour.centroid.x += aPoint.x;
+					aContour.centroid.y += aPoint.y;
 					aPoint.label = -1;
 					temp2.push_back(aPoint);
 					aContour.point.push_back(contour[i][j]);
 				}
 
+				aContour.centroid.x /= contour[i].size();
+				aContour.centroid.y /= contour[i].size();
 				temp3.push_back(aContour);
 				aContour.point.clear();
 			}
@@ -411,10 +424,10 @@ int main( int argc, char* argv[] ){
 
 	std::cout<<objects.size()<<std::endl;
 
-	vector<int> remain1, remain2, remain3, remain4;
+	vector<int> remain1, remain2, remain3, remain4, remain5;
 
 	for(int i = 0; i < objects.size(); i++){
-		if(objects[i].z >= 3){
+		if(objects[i].z >= 2){
 			for(int j = 0; j < objects[i].contour.size(); j++){
 				if(objects[i].contour[j].x >= 3 && objects[i].contour[j].y >= 3){
 					if(nowL != i){
@@ -479,10 +492,45 @@ int main( int argc, char* argv[] ){
 		tempCounter = 0;
 	}
 	
+	Point2f tempCentroid1(-1, -1);
+	Point2f tempCentroid2(-1, -1);
+
+	for(int i = 0; i < objects.size(); i++){
+		for(int j = 0; j < objects[i].contour.size(); j++){
+			if(j == 0){
+				tempCentroid1.x = objects[i].contour[j].centroid.x;
+				tempCentroid1.y = objects[i].contour[j].centroid.y;
+			} else {
+				tempCentroid2.x = objects[i].contour[j].centroid.x;
+				tempCentroid2.y = objects[i].contour[j].centroid.y;
+
+				if(sqrt((tempCentroid1.x - tempCentroid2.x) * (tempCentroid1.x - tempCentroid2.x) + (tempCentroid1.y - tempCentroid2.y) * (tempCentroid1.y - tempCentroid2.y)) < 3.0f){
+					tempCounter++;
+				}
+
+				tempCentroid1.x = tempCentroid2.x;
+				tempCentroid1.y = tempCentroid2.y;
+				tempCentroid2.x = -1;
+				tempCentroid2.y = -1;
+			}
+		}
+
+		if(tempCounter == objects[i].contour.size() - 1){
+			for(int j = 0; j < remain4.size(); j++){
+				if(i == remain4[j]){
+					remain5.push_back(i);
+				}
+			}
+		}
+
+		tempCounter = 0;
+	}
+
 	std::cout<<remain1.size()<<std::endl;
 	std::cout<<remain2.size()<<std::endl;
 	std::cout<<remain3.size()<<std::endl;
 	std::cout<<remain4.size()<<std::endl;
+	std::cout<<remain5.size()<<std::endl;
 
 	for( noduleIterator.GoToBegin(), originIterator.GoToBegin(); !noduleIterator.IsAtEnd(); noduleIterator.NextSlice(), originIterator.NextSlice() ){
 		ImageType3D::IndexType sliceIndex = noduleIterator.GetIndex();
@@ -526,10 +574,10 @@ int main( int argc, char* argv[] ){
 		vector<vector<Point>> contourToDraw;
 		vector<int> index;
 
-		for(int i = 0; i < remain4.size(); i++){
-			for(int j = 0; j < objects[remain4[i]].contour.size(); j++){
-				if(objects[remain4[i]].contour[j].slice == sliceIndex[2]){
-					contourToDraw.push_back(objects[remain4[i]].contour[j].point);
+		for(int i = 0; i < remain5.size(); i++){
+			for(int j = 0; j < objects[remain5[i]].contour.size(); j++){
+				if(objects[remain5[i]].contour[j].slice == sliceIndex[2]){
+					contourToDraw.push_back(objects[remain5[i]].contour[j].point);
 					index.push_back(i);
 				}
 			}
@@ -542,15 +590,15 @@ int main( int argc, char* argv[] ){
 		for(int i = 0; i < drawing.cols; i++){
 			for(int j = 0; j < drawing.rows; j++){
 				if(drawing.at<unsigned short>(j, i) != 0){
-					objects[remain4[drawing.at<unsigned short>(j, i) - 1]].agv += origin.at<signed short>(j, i);
-					objects[remain4[drawing.at<unsigned short>(j, i) - 1]].count++;
+					objects[remain5[drawing.at<unsigned short>(j, i) - 1]].agv += origin.at<signed short>(j, i);
+					objects[remain5[drawing.at<unsigned short>(j, i) - 1]].count++;
 				}
 			}
 		}
 	}
 	
-	for(int i = 0; i < remain4.size(); i++){
-		objects[remain4[i]].agv /= objects[remain4[i]].count;
+	for(int i = 0; i < remain5.size(); i++){
+		objects[remain5[i]].agv /= objects[remain5[i]].count;
 	}
 
 	for( noduleIterator.GoToBegin(), originIterator.GoToBegin(); !noduleIterator.IsAtEnd(); noduleIterator.NextSlice(), originIterator.NextSlice() ){
@@ -595,10 +643,10 @@ int main( int argc, char* argv[] ){
 		vector<vector<Point>> contourToDraw;
 		vector<int> index;
 
-		for(int i = 0; i < remain4.size(); i++){
-			for(int j = 0; j < objects[remain4[i]].contour.size(); j++){
-				if(objects[remain4[i]].contour[j].slice == sliceIndex[2]){
-					contourToDraw.push_back(objects[remain4[i]].contour[j].point);
+		for(int i = 0; i < remain5.size(); i++){
+			for(int j = 0; j < objects[remain5[i]].contour.size(); j++){
+				if(objects[remain5[i]].contour[j].slice == sliceIndex[2]){
+					contourToDraw.push_back(objects[remain5[i]].contour[j].point);
 					index.push_back(i);
 				}
 			}
@@ -611,56 +659,56 @@ int main( int argc, char* argv[] ){
 		for(int i = 0; i < drawing.cols; i++){
 			for(int j = 0; j < drawing.rows; j++){
 				if(drawing.at<unsigned short>(j, i) != 0){
-					objects[remain4[drawing.at<unsigned short>(j, i) - 1]].sd += (origin.at<signed short>(j, i) - objects[remain4[drawing.at<unsigned short>(j, i) - 1]].agv) * (origin.at<signed short>(j, i) - objects[remain4[drawing.at<unsigned short>(j, i) - 1]].agv);
+					objects[remain5[drawing.at<unsigned short>(j, i) - 1]].sd += (origin.at<signed short>(j, i) - objects[remain5[drawing.at<unsigned short>(j, i) - 1]].agv) * (origin.at<signed short>(j, i) - objects[remain5[drawing.at<unsigned short>(j, i) - 1]].agv);
 				}
 			}
 		}
 	}
 
-	for(int i = 0; i < remain4.size(); i++){
-		objects[remain4[i]].sd = sqrt(objects[remain4[i]].sd / objects[remain4[i]].count);
+	for(int i = 0; i < remain5.size(); i++){
+		objects[remain5[i]].sd = sqrt(objects[remain5[i]].sd / objects[remain5[i]].count);
 	}
 
 	vector<double> volume, surfaceArea, agv, sd, area, perimeter, circularity, a, b, eccentricity;
 
-	for(int i = 0; i < remain4.size(); i++){
-		for(int j = 0; j < objects[remain4[i]].contour.size(); j++){
-			objects[remain4[i]].volume += 0.801f * objects[remain4[i]].contour[j].area;
+	for(int i = 0; i < remain5.size(); i++){
+		for(int j = 0; j < objects[remain5[i]].contour.size(); j++){
+			objects[remain5[i]].volume += 0.801f * objects[remain5[i]].contour[j].area;
 		}
 	}
 
-	for(int i = 0; i < remain4.size(); i++){
-		for(int j = 0; j < objects[remain4[i]].contour.size(); j++){
-			if (j == 0 || j == objects[remain4[i]].contour.size() - 1){
-				objects[remain4[i]].surfaceArea += objects[remain4[i]].contour[j].area;
+	for(int i = 0; i < remain5.size(); i++){
+		for(int j = 0; j < objects[remain5[i]].contour.size(); j++){
+			if (j == 0 || j == objects[remain5[i]].contour.size() - 1){
+				objects[remain5[i]].surfaceArea += objects[remain5[i]].contour[j].area;
 			} else {
-				objects[remain4[i]].surfaceArea += 0.801f * objects[remain4[i]].contour[j].perimeter;
+				objects[remain5[i]].surfaceArea += 0.801f * objects[remain5[i]].contour[j].perimeter;
 			}
 		}
 	}
 
-	for(int i = 0; i < remain4.size(); i++){
-		volume.push_back(objects[remain4[i]].volume);
-		surfaceArea.push_back(objects[remain4[i]].surfaceArea);
-		agv.push_back(objects[remain4[i]].agv);
-		sd.push_back(objects[remain4[i]].sd);
-		area.push_back(objects[remain4[i]].mArea);
-		perimeter.push_back(objects[remain4[i]].mP);
-		circularity.push_back(objects[remain4[i]].mC);
-		a.push_back(objects[remain4[i]].mA);
-		b.push_back(objects[remain4[i]].mB);
-		eccentricity.push_back(objects[remain4[i]].mE);
+	for(int i = 0; i < remain5.size(); i++){
+		volume.push_back(objects[remain5[i]].volume);
+		surfaceArea.push_back(objects[remain5[i]].surfaceArea);
+		agv.push_back(objects[remain5[i]].agv);
+		sd.push_back(objects[remain5[i]].sd);
+		area.push_back(objects[remain5[i]].mArea);
+		perimeter.push_back(objects[remain5[i]].mP);
+		circularity.push_back(objects[remain5[i]].mC);
+		a.push_back(objects[remain5[i]].mA);
+		b.push_back(objects[remain5[i]].mB);
+		eccentricity.push_back(objects[remain5[i]].mE);
 	}
 
 	vector<AnObject> remains;
-	vector<int> labels(remain4.size());
+	vector<int> labels(remain5.size());
 
-	for(int i = 0; i < remain4.size(); i++){
-		remains.push_back(objects[remain4[i]]);
+	for(int i = 0; i < remain5.size(); i++){
+		remains.push_back(objects[remain5[i]]);
 		labels[i] = 0;
 	}
 
-	int slice = 0, X = 322, Y = 266;
+	int slice = 0, X = 0, Y = 0;
 	
 	//input patients' nodule information
 
@@ -680,7 +728,7 @@ int main( int argc, char* argv[] ){
 
 	vector<double> features;
 
-	for(int i = 0; i < remain4.size(); i++){
+	for(int i = 0; i < remain5.size(); i++){
 		features.push_back(volume[i]);
 		features.push_back(surfaceArea[i]);
 		features.push_back(agv[i]);
@@ -693,7 +741,7 @@ int main( int argc, char* argv[] ){
 		features.push_back(eccentricity[i]);
 	}
 
-	features.push_back(remain4.size());
+	features.push_back(remain5.size());
 	features.push_back(10);
 
 	std::ofstream file2("C:\\downloads\\features.txt");
@@ -702,7 +750,7 @@ int main( int argc, char* argv[] ){
 	
 	csv::ofstream os("C:\\downloads\\features.csv");
 	os.set_delimiter(',', "EOF");
-	for(int i = 0; i < remain4.size(); i++){
+	for(int i = 0; i < remain5.size(); i++){
 		os << volume[i] << surfaceArea[i] << agv[i] << sd[i] << area[i] << perimeter[i] << circularity[i] << a[i] << b[i] << eccentricity[i] << NEWLINE;
 	}
 	os.flush();
@@ -760,3 +808,5 @@ int main( int argc, char* argv[] ){
 	}
 	return EXIT_SUCCESS;
 }
+
+
