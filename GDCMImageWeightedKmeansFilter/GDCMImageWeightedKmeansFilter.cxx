@@ -97,20 +97,17 @@ int main( int argc, char * argv[] ){
 
 	//获取上区与中区，中区与下区的临界切片序号
 	double R;
-	int indexBetweenUpperAndMiddle = atoi( argv[4] );
-	int indexBetweenMiddleAndLower = atoi( argv[5] );
  
 	for( medianIterator.GoToBegin(), originIterator.GoToBegin(); !medianIterator.IsAtEnd(); medianIterator.NextSlice(), originIterator.NextSlice() ){
 		//获取切片序号
 		ImageType3D::IndexType medianSliceIndex = medianIterator.GetIndex();
-
 		ImageType3D::IndexType originSliceIndex = originIterator.GetIndex();
 
 		//如果位于中区，则设定R=4.0，否则为8.0
-		if ( medianSliceIndex[2] >= indexBetweenUpperAndMiddle && medianSliceIndex[2] < indexBetweenMiddleAndLower){
-			R = 4.0;
+		if ( medianSliceIndex[2] >= atoi(argv[4]) - 1 && medianSliceIndex[2] < atoi(argv[5])){
+			R = 4.0f;
 		} else {
-			R = 8.0;
+			R = 8.0f;
 		}
 
 		//获取每张切片的大小，并设置每张切片的Z轴为0
