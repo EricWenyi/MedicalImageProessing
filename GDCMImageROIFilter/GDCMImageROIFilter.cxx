@@ -73,7 +73,7 @@ int main( int argc, char * argv[] ){
 		//获取切片序号
 		ImageType3D::IndexType sliceIndex = iterator.GetIndex();
 
-		if ( sliceIndex[2] > 42 && sliceIndex[2] < 47 ){
+		if ( sliceIndex[2] >= atoi(argv[3]) - 1 && sliceIndex[2] < atoi(argv[4]) ){
 			//获取每张切片的大小，并设置每张切片的Z轴为0
 			typedef itk::ExtractImageFilter< ImageType3D, ImageType2D > ExtractFilterType;
 			ExtractFilterType::InputImageRegionType sliceRegion = iterator.GetRegion();
@@ -104,13 +104,13 @@ int main( int argc, char * argv[] ){
 			
 			//设定区域起始点
 			ImageType2D::IndexType index;
-			index[0] = 256;
-			index[1] = 128;
+			index[0] = 0;
+			index[1] = 0;
 
 			//设定区域大小
 			ImageType2D::SizeType size;
-			size[0] = 4;
-			size[1] = 4;
+			size[0] = 512;
+			size[1] = 512;
 
 			//设定ROI区域参数
 			ImageType2D::RegionType region;
