@@ -337,12 +337,12 @@ int main( int argc, char* argv[] ){
 				anObject.label = contours[i][j].label;
 				anObject.z = 1;
 				anObject.count = 0;
-				anObject.mArea = -1;
-				anObject.mP = -1;
-				anObject.mC = -1;
-				anObject.mA = -1;
-				anObject.mB = -1;
-				anObject.mE = -1;
+				anObject.mArea = contours[i][j].area;
+				anObject.mP = contours[i][j].perimeter;
+				anObject.mC = 4 * 3.1415926f * contours[i][j].area / contours[i][j].perimeter / contours[i][j].perimeter;
+				anObject.mA = contours[i][j].a;
+				anObject.mB = contours[i][j].b;
+				anObject.mE = sqrt(1 - (contours[i][j].b * contours[i][j].b / contours[i][j].a / contours[i][j].a));
 				anObject.volume = 0.0f;
 				anObject.surfaceArea = 0.0f;
 				anObject.agv = 0.0f;
@@ -398,12 +398,12 @@ int main( int argc, char* argv[] ){
 					anObject.label = contours[i][j].label;
 					anObject.z = 1;
 					anObject.count = 0;
-					anObject.mArea = -1;
-					anObject.mP = -1;
-					anObject.mC = -1;
-					anObject.mA = -1;
-					anObject.mB = -1;
-					anObject.mE = -1;
+					anObject.mArea = contours[i][j].area;
+					anObject.mP = contours[i][j].perimeter;
+					anObject.mC = 4 * 3.1415926f * contours[i][j].area / contours[i][j].perimeter / contours[i][j].perimeter;
+					anObject.mA = contours[i][j].a;
+					anObject.mB = contours[i][j].b;
+					anObject.mE = sqrt(1 - (contours[i][j].b * contours[i][j].b / contours[i][j].a / contours[i][j].a));
 					anObject.volume = 0.0f;
 					anObject.surfaceArea = 0.0f;
 					anObject.agv = 0.0f;
@@ -421,7 +421,7 @@ int main( int argc, char* argv[] ){
 	std::cout<<objects.size()<<std::endl;
 
 	vector<int> remain1, remain2, remain3, remain4, remain5;
-
+	
 	for(int i = 0; i < objects.size(); i++){
 		if(objects[i].z >= 2){
 			for(int j = 0; j < objects[i].contour.size(); j++){
@@ -435,18 +435,11 @@ int main( int argc, char* argv[] ){
 		}
 	}
 	
-	nowL = -1;
-
 	for(int i = 0; i < remain1.size(); i++){
 		if(objects[remain1[i]].mC > 0.2f){
-			if(nowL != remain1[i]){
-				remain2.push_back(remain1[i]);
-				nowL = i;
-			}
+			remain2.push_back(remain1[i]);
 		}
 	}
-
-	nowL = -1;
 
 	for(int i = 0; i < remain2.size(); i++){
 		for(int j = 0; j < objects[remain2[i]].contour.size(); j++){
@@ -687,7 +680,7 @@ int main( int argc, char* argv[] ){
 		remains.push_back(objects[remain5[i]]);
 		labels[i] = 0;
 	}
-
+	
 	int slice = 0, X = 0, Y = 0;
 	
 	//input patients' nodule information
