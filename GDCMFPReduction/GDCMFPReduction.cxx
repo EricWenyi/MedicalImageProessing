@@ -11,8 +11,8 @@
 #include "minicsv.h"
 
 int main( int argc, char* argv[] ){
-	if( argc < 4 ){
-		std::cerr << "Usage: " << argv[0] << "noduleImageFile originImageFile outputImageFile" << std::endl;
+	if( argc < 5 ){
+		std::cerr << "Usage: " << argv[0] << "noduleImageFile originImageFile outputImageFile sliceThickness" << std::endl;
 		return EXIT_FAILURE;
 	}
 
@@ -646,7 +646,7 @@ int main( int argc, char* argv[] ){
 
 	for(int i = 0; i < remain5.size(); i++){
 		for(int j = 0; j < objects[remain5[i]].contour.size(); j++){
-			objects[remain5[i]].volume += 0.801f * objects[remain5[i]].contour[j].area;
+			objects[remain5[i]].volume += atof(argv[4]) * objects[remain5[i]].contour[j].area;
 		}
 	}
 
@@ -655,7 +655,7 @@ int main( int argc, char* argv[] ){
 			if (j == 0 || j == objects[remain5[i]].contour.size() - 1){
 				objects[remain5[i]].surfaceArea += objects[remain5[i]].contour[j].area;
 			} else {
-				objects[remain5[i]].surfaceArea += 0.801f * objects[remain5[i]].contour[j].perimeter;
+				objects[remain5[i]].surfaceArea += atof(argv[4]) * objects[remain5[i]].contour[j].perimeter;
 			}
 		}
 	}
