@@ -15,7 +15,7 @@ int main( int argc, char* argv[] ){
 		std::cerr << "Usage: " << argv[0] << "noduleImageFile originImageFile outputImageFile sliceThickness startSlice endSlice" << std::endl;
 		return EXIT_FAILURE;
 	}
-
+	
 	typedef itk::Image< signed short, 3 > ImageType3D;
 	typedef itk::Image< signed short, 2 > ImageType2D;
 
@@ -683,22 +683,39 @@ int main( int argc, char* argv[] ){
 				if(remains[i].contour[j].slice == slice){
 					if(pointPolygonTest(remains[i].contour[j].point, Point(X, Y), false) != -1){
 						labels[i] = "true";
+						std::cout<<"true"<<std::endl;
 					}
 				}
 			}
 		}
 	}
-	
-	csv::ofstream os("C:\\downloads\\features.csv");
+
+	String path;
+	char *s = strcpy(new char[strlen(argv[1])], argv[1]);
+	char *p = strtok(s, "\\");
+	while(p != NULL){
+		if(atoi(p)){
+			path += p;
+		}
+		p = strtok(NULL, "\\");
+	}
+
+	if(path.size() == 6){
+		path += "0";
+	}
+
+	path = "C:\\downloads\\ITK\\data\\" + path + ".csv";
+
+	csv::ofstream os(path.c_str());
 	os.set_delimiter(',', "EOF");
 	for(int i = 0; i < remain5.size(); i++){
 		os << volume[i] << surfaceArea[i] << agv[i] << sd[i] << area[i] << perimeter[i] << circularity[i] << a[i] << b[i] << eccentricity[i] << labels[i] << NEWLINE;
 	}
 	os.flush();
 
-	//LDA
+	//classifier
 
-	//draw the result
+	//result
 
 	for( originIterator.GoToBegin(); !originIterator.IsAtEnd(); originIterator.NextSlice() ){
 		ImageType3D::IndexType sliceIndex = originIterator.GetIndex();
@@ -724,7 +741,7 @@ int main( int argc, char* argv[] ){
 			return EXIT_FAILURE;
 		}
 		
-		joinSeries->PushBackInput( extractor->GetOutput() );
+		//joinSeries->PushBackInput( extractor->GetOutput() );
 	}
 		
 	try{
