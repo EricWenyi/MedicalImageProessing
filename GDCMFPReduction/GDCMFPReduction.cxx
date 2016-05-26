@@ -11,8 +11,8 @@
 #include "minicsv.h"
 
 int main( int argc, char* argv[] ){
-	if( argc < 5 ){
-		std::cerr << "Usage: " << argv[0] << "noduleImageFile originImageFile outputImageFile sliceThickness" << std::endl;
+	if( argc < 7 ){
+		std::cerr << "Usage: " << argv[0] << "noduleImageFile originImageFile outputImageFile sliceThickness startSlice endSlice" << std::endl;
 		return EXIT_FAILURE;
 	}
 
@@ -110,7 +110,6 @@ int main( int argc, char* argv[] ){
 
 	for( noduleIterator.GoToBegin(); !noduleIterator.IsAtEnd(); noduleIterator.NextSlice() ){
 		ImageType3D::IndexType sliceIndex = noduleIterator.GetIndex();
-		location[2] = sliceIndex[2];
 		printf( "Slice Index --- %d ---\n", sliceIndex[2] );
 		ExtractFilterType::InputImageRegionType::SizeType sliceSize = noduleIterator.GetRegion().GetSize();
 		sliceSize[2] = 0;
@@ -133,179 +132,163 @@ int main( int argc, char* argv[] ){
 			return EXIT_FAILURE;
 		}
 
-		Mat img = itk::OpenCVImageBridge::ITKImageToCVMat< ImageType2D >( extractor->GetOutput() );
-		img.convertTo(img, CV_8UC1);
+		if(sliceIndex[2] >= atoi(argv[5]) - 1 && sliceIndex[2] < atoi(argv[6])){
+			location[2] = sliceIndex[2];
 
-		vector<vector<Point>> contour;
-		vector<Vec4i> hierarchy;
-		findContours( img, contour, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_NONE, Point(0, 0) );
+			Mat img = itk::OpenCVImageBridge::ITKImageToCVMat< ImageType2D >( extractor->GetOutput() );
+			img.convertTo(img, CV_8UC1);
 
-		if(sliceIndex[2] == 0){
-			for(int i = 0; i < contour.size(); i++){
-				aContour.label = labelCounter;
-				aContour.slice = sliceIndex[2];
-				aContour.area = contourArea(contour[i]);
-				aContour.perimeter = arcLength(contour[i], true);
+			vector<vector<Point>> contour;
+			vector<Vec4i> hierarchy;
+			findContours( img, contour, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_NONE, Point(0, 0) );
+
+			if(sliceIndex[2] == atoi(argv[5]) - 1){
+				for(int i = 0; i < contour.size(); i++){
+					aContour.label = labelCounter;
+					aContour.slice = sliceIndex[2];
+					aContour.area = contourArea(contour[i]);
+					aContour.perimeter = arcLength(contour[i], true);
 				
-				if(contour[i].size() < 5){
-					aContour.a = -3.0f;
-					aContour.b = -1.0f;
-				} else {
-					aContour.a = fitEllipse(contour[i]).size.height;
-					aContour.b = fitEllipse(contour[i]).size.width;
+					if(contour[i].size() < 5){
+						aContour.a = -3.0f;
+						aContour.b = -1.0f;
+					} else {
+						aContour.a = fitEllipse(contour[i]).size.height;
+						aContour.b = fitEllipse(contour[i]).size.width;
+					}
+
+					aContour.boundingArea = minAreaRect(contour[i]).size.area();
+					aContour.x = boundingRect(contour[i]).height;
+					aContour.y = boundingRect(contour[i]).width;
+					aContour.centroid.x = 0.0f;
+					aContour.centroid.y = 0.0f;
+
+					for(int j = 0; j < contour[i].size(); j++){
+						aPoint.c = i;
+						aPoint.x = contour[i][j].x;
+						aPoint.y = contour[i][j].y;
+						aContour.centroid.x += aPoint.x;
+						aContour.centroid.y += aPoint.y;
+						aPoint.label = labelCounter;
+						temp1.push_back(aPoint);
+						aContour.point.push_back(contour[i][j]);
+					}
+
+					labelCounter++;
+					aContour.centroid.x /= contour[i].size();
+					aContour.centroid.y /= contour[i].size();
+					temp3.push_back(aContour);
+					aContour.point.clear();
 				}
 
-				aContour.boundingArea = minAreaRect(contour[i]).size.area();
-				aContour.x = boundingRect(contour[i]).height;
-				aContour.y = boundingRect(contour[i]).width;
-				aContour.centroid.x = 0.0f;
-				aContour.centroid.y = 0.0f;
-
-				for(int j = 0; j < contour[i].size(); j++){
-					aPoint.c = i;
-					aPoint.x = contour[i][j].x;
-					aPoint.y = contour[i][j].y;
-					aContour.centroid.x += aPoint.x;
-					aContour.centroid.y += aPoint.y;
-					aPoint.label = labelCounter;
-					temp1.push_back(aPoint);
-					aContour.point.push_back(contour[i][j]);
-				}
-
-				labelCounter++;
-				aContour.centroid.x /= contour[i].size();
-				aContour.centroid.y /= contour[i].size();
-				temp3.push_back(aContour);
-				aContour.point.clear();
-			}
-
-			contours.push_back(temp3);
-			temp3.clear();
-		} else {
-			for(int i = 0; i < contour.size(); i++){
-				aContour.label = -1;
-				aContour.slice = sliceIndex[2];
-				aContour.area = contourArea(contour[i]);
-				aContour.perimeter = arcLength(contour[i], true);
+				contours.push_back(temp3);
+				temp3.clear();
+			} else {
+				for(int i = 0; i < contour.size(); i++){
+					aContour.label = -1;
+					aContour.slice = sliceIndex[2];
+					aContour.area = contourArea(contour[i]);
+					aContour.perimeter = arcLength(contour[i], true);
 				
-				if(contour[i].size() < 5){
-					aContour.a = -3.0f;
-					aContour.b = -1.0f;
-				} else {
-					aContour.a = fitEllipse(contour[i]).size.height;
-					aContour.b = fitEllipse(contour[i]).size.width;
-				}
+					if(contour[i].size() < 5){
+						aContour.a = -3.0f;
+						aContour.b = -1.0f;
+					} else {
+						aContour.a = fitEllipse(contour[i]).size.height;
+						aContour.b = fitEllipse(contour[i]).size.width;
+					}
 				
-				aContour.boundingArea = minAreaRect(contour[i]).size.area();
-				aContour.x = boundingRect(contour[i]).height;
-				aContour.y = boundingRect(contour[i]).width;
-				aContour.centroid.x = 0.0f;
-				aContour.centroid.y = 0.0f;
+					aContour.boundingArea = minAreaRect(contour[i]).size.area();
+					aContour.x = boundingRect(contour[i]).height;
+					aContour.y = boundingRect(contour[i]).width;
+					aContour.centroid.x = 0.0f;
+					aContour.centroid.y = 0.0f;
 
-				for(int j = 0; j < contour[i].size(); j++){
-					aPoint.c = i;
-					aPoint.x = contour[i][j].x;
-					aPoint.y = contour[i][j].y;
-					aContour.centroid.x += aPoint.x;
-					aContour.centroid.y += aPoint.y;
-					aPoint.label = -1;
-					temp2.push_back(aPoint);
-					aContour.point.push_back(contour[i][j]);
+					for(int j = 0; j < contour[i].size(); j++){
+						aPoint.c = i;
+						aPoint.x = contour[i][j].x;
+						aPoint.y = contour[i][j].y;
+						aContour.centroid.x += aPoint.x;
+						aContour.centroid.y += aPoint.y;
+						aPoint.label = -1;
+						temp2.push_back(aPoint);
+						aContour.point.push_back(contour[i][j]);
+					}
+
+					aContour.centroid.x /= contour[i].size();
+					aContour.centroid.y /= contour[i].size();
+					temp3.push_back(aContour);
+					aContour.point.clear();
 				}
-
-				aContour.centroid.x /= contour[i].size();
-				aContour.centroid.y /= contour[i].size();
-				temp3.push_back(aContour);
-				aContour.point.clear();
-			}
 	
-			for(int i = 0; i < temp2.size(); i++){
-				location[0] = temp2[i].x;
-				location[1] = temp2[i].y;
-				it.SetLocation(location);
+				for(int i = 0; i < temp2.size(); i++){
+					location[0] = temp2[i].x;
+					location[1] = temp2[i].y;
+					it.SetLocation(location);
 
-				int counter = -1;
+					int counter = -1;
 
-				for(int j = 0; j < 9; j++){
-					if(it.GetPixel(j) != 0){
-						for(int k = 0; k < temp1.size(); k++){
-							if(temp1[k].x == it.GetIndex(j)[0] && temp1[k].y == it.GetIndex(j)[1]){
-								if(counter != 0){
-									temp2[i].label = temp1[k].label;
-									counter++;
-								} else if (temp2[i].label != temp1[k].label){
-									for(int l = 0; l < temp1.size(); l++){
-										if(temp1[l].label == temp1[k].label){
-											temp1[l].label = temp2[i].label;
+					for(int j = 0; j < 9; j++){
+						if(it.GetPixel(j) != 0){
+							for(int k = 0; k < temp1.size(); k++){
+								if(temp1[k].x == it.GetIndex(j)[0] && temp1[k].y == it.GetIndex(j)[1]){
+									if(counter != 0){
+										temp2[i].label = temp1[k].label;
+										counter++;
+									} else if (temp2[i].label != temp1[k].label){
+										for(int l = 0; l < temp1.size(); l++){
+											if(temp1[l].label == temp1[k].label){
+												temp1[l].label = temp2[i].label;
+											}
 										}
 									}
 								}
 							}
 						}
 					}
-				}
 
-				counter = -1;
+					counter = -1;
 				
-				vector<int> labels;
-
-				if(nowC != temp2[i].c){
-					if(nowC != -1){
-						for(int j = 0; j < temp3[nowC].point.size(); j++){
-							temp2[i - 1 - j].label = temp3[nowC].label;
-						}
-					}
-
-					for(int j = 0; j < temp1.size(); j++){
-						for(int k = 1; k < labels.size(); k++){
-							if(temp1[j].label == labels[k]){
-								temp1[j].label = labels[0];
+					if(nowC != temp2[i].c){
+						if(nowC != -1){
+							for(int j = 0; j < temp3[nowC].point.size(); j++){
+								temp2[i - 1 - j].label = temp3[nowC].label;
 							}
 						}
-					}
 
-					nowC = temp2[i].c;
-					zeroCounter = 0;
+						nowC = temp2[i].c;
+						zeroCounter = 0;
 
-					if(temp2[i].label == -1){
-						zeroCounter++;
-					} else {
-						temp3[nowC].label = temp2[i].label;
-						labels.push_back(temp3[nowC].label);
-					}
-				} else if (temp2[i].label == -1){
-					zeroCounter++;
-					if(zeroCounter == temp3[nowC].point.size()){
-						temp3[nowC].label = labelCounter;
-						labelCounter++;
-					}
-				} else {
-					if (temp3[nowC].label == -1){
-						temp3[nowC].label = temp2[i].label;
-						labels.push_back(temp3[nowC].label);
-					}
-
-					for(int j = 0; j < labels.size(); j++){
-						if(temp2[i].label != labels[j]){
-							labels.push_back(temp2[i].label);
+						if(temp2[i].label == -1){
+							zeroCounter++;
+						} else {
+							temp3[nowC].label = temp2[i].label;
 						}
+					} else if (temp2[i].label == -1){
+						zeroCounter++;
+						if(zeroCounter == temp3[nowC].point.size()){
+							temp3[nowC].label = labelCounter;
+							labelCounter++;
+						}
+					} else if (temp3[nowC].label == -1){
+						temp3[nowC].label = temp2[i].label;
 					}
 				}
-			}
 
-			nowC = -1;
+				nowC = -1;
 
-			points.push_back(temp1);
-			contours.push_back(temp3);
+				points.push_back(temp1);
+				contours.push_back(temp3);
 			
-			if(sliceIndex[2] == noduleIterator.GetRegion().GetSize()[2] - 1){
-				points.push_back(temp2);
-			} else {
-				temp1.clear();
-				temp1.resize(temp2.size());
-				memcpy(&temp1[0], &temp2[0], temp2.size() * sizeof(APoint));
-				temp2.clear();
-				temp3.clear();
+				if(sliceIndex[2] == atoi(argv[6]) - 1){
+					points.push_back(temp2);
+				} else {
+					temp1.clear();
+					temp1.resize(temp2.size());
+					memcpy(&temp1[0], &temp2[0], temp2.size() * sizeof(APoint));
+					temp2.clear();
+					temp3.clear();
+				}
 			}
 		}
 	}
@@ -544,27 +527,29 @@ int main( int argc, char* argv[] ){
 
 		Mat origin = itk::OpenCVImageBridge::ITKImageToCVMat< ImageType2D >( extractor->GetOutput() );
 
-		vector<vector<Point>> contourToDraw;
-		vector<int> index;
+		if(sliceIndex[2] >= atoi(argv[5]) - 1 && sliceIndex[2] < atoi(argv[6])){
+			vector<vector<Point>> contourToDraw;
+			vector<int> index;
 
-		for(int i = 0; i < remain5.size(); i++){
-			for(int j = 0; j < objects[remain5[i]].contour.size(); j++){
-				if(objects[remain5[i]].contour[j].slice == sliceIndex[2]){
-					contourToDraw.push_back(objects[remain5[i]].contour[j].point);
-					index.push_back(i);
+			for(int i = 0; i < remain5.size(); i++){
+				for(int j = 0; j < objects[remain5[i]].contour.size(); j++){
+					if(objects[remain5[i]].contour[j].slice == sliceIndex[2]){
+						contourToDraw.push_back(objects[remain5[i]].contour[j].point);
+						index.push_back(i);
+					}
 				}
-			}
-		} 
+			} 
 		
-		for(int i = 0; i < contourToDraw.size(); i++){
-			drawContours(drawing, contourToDraw, i, Scalar(index[i] + 1), CV_FILLED, 8, noArray(), 0, Point(0, 0));
-		}
+			for(int i = 0; i < contourToDraw.size(); i++){
+				drawContours(drawing, contourToDraw, i, Scalar(index[i] + 1), CV_FILLED, 8, noArray(), 0, Point(0, 0));
+			}
 
-		for(int i = 0; i < drawing.cols; i++){
-			for(int j = 0; j < drawing.rows; j++){
-				if(drawing.at<unsigned short>(j, i) != 0){
-					objects[remain5[drawing.at<unsigned short>(j, i) - 1]].agv += origin.at<signed short>(j, i);
-					objects[remain5[drawing.at<unsigned short>(j, i) - 1]].count++;
+			for(int i = 0; i < drawing.cols; i++){
+				for(int j = 0; j < drawing.rows; j++){
+					if(drawing.at<unsigned short>(j, i) != 0){
+						objects[remain5[drawing.at<unsigned short>(j, i) - 1]].agv += origin.at<signed short>(j, i);
+						objects[remain5[drawing.at<unsigned short>(j, i) - 1]].count++;
+					}
 				}
 			}
 		}
@@ -613,26 +598,28 @@ int main( int argc, char* argv[] ){
 
 		Mat origin = itk::OpenCVImageBridge::ITKImageToCVMat< ImageType2D >( extractor->GetOutput() );
 
-		vector<vector<Point>> contourToDraw;
-		vector<int> index;
+		if(sliceIndex[2] >= atoi(argv[5]) - 1 && sliceIndex[2] < atoi(argv[6])){
+			vector<vector<Point>> contourToDraw;
+			vector<int> index;
 
-		for(int i = 0; i < remain5.size(); i++){
-			for(int j = 0; j < objects[remain5[i]].contour.size(); j++){
-				if(objects[remain5[i]].contour[j].slice == sliceIndex[2]){
-					contourToDraw.push_back(objects[remain5[i]].contour[j].point);
-					index.push_back(i);
+			for(int i = 0; i < remain5.size(); i++){
+				for(int j = 0; j < objects[remain5[i]].contour.size(); j++){
+					if(objects[remain5[i]].contour[j].slice == sliceIndex[2]){
+						contourToDraw.push_back(objects[remain5[i]].contour[j].point);
+						index.push_back(i);
+					}
 				}
 			}
-		}
 
-		for(int i = 0; i < contourToDraw.size(); i++){
-			drawContours(drawing, contourToDraw, i, Scalar(index[i] + 1), CV_FILLED, 8, noArray(), 0, Point(0, 0));
-		}
+			for(int i = 0; i < contourToDraw.size(); i++){
+				drawContours(drawing, contourToDraw, i, Scalar(index[i] + 1), CV_FILLED, 8, noArray(), 0, Point(0, 0));
+			}
 
-		for(int i = 0; i < drawing.cols; i++){
-			for(int j = 0; j < drawing.rows; j++){
-				if(drawing.at<unsigned short>(j, i) != 0){
-					objects[remain5[drawing.at<unsigned short>(j, i) - 1]].sd += (origin.at<signed short>(j, i) - objects[remain5[drawing.at<unsigned short>(j, i) - 1]].agv) * (origin.at<signed short>(j, i) - objects[remain5[drawing.at<unsigned short>(j, i) - 1]].agv);
+			for(int i = 0; i < drawing.cols; i++){
+				for(int j = 0; j < drawing.rows; j++){
+					if(drawing.at<unsigned short>(j, i) != 0){
+						objects[remain5[drawing.at<unsigned short>(j, i) - 1]].sd += (origin.at<signed short>(j, i) - objects[remain5[drawing.at<unsigned short>(j, i) - 1]].agv) * (origin.at<signed short>(j, i) - objects[remain5[drawing.at<unsigned short>(j, i) - 1]].agv);
+					}
 				}
 			}
 		}
@@ -674,22 +661,29 @@ int main( int argc, char* argv[] ){
 	}
 
 	vector<AnObject> remains;
-	vector<int> labels(remain5.size());
+	vector<String> labels(remain5.size());
 
 	for(int i = 0; i < remain5.size(); i++){
 		remains.push_back(objects[remain5[i]]);
-		labels[i] = 0;
+		labels[i] = "false";
 	}
 	
-	int slice = 0, X = 0, Y = 0;
-	
-	//input patients' nodule information
+	int slice, X, Y;
+	while(1){
+		scanf("%d,%d,%d", &slice, &X, &Y);
 
-	for(int i = 0; i < remains.size(); i++){
-		for(int j = 0; j < remains[i].contour.size(); j++){
-			if(remains[i].contour[j].slice == slice){
-				if(pointPolygonTest(remains[i].contour[j].point, Point(X, Y), false) != -1){
-					labels[i] = 1;
+		if(slice == -1 && X == -1 && Y == -1){
+			break;
+		}
+
+		slice--;
+
+		for(int i = 0; i < remains.size(); i++){
+			for(int j = 0; j < remains[i].contour.size(); j++){
+				if(remains[i].contour[j].slice == slice){
+					if(pointPolygonTest(remains[i].contour[j].point, Point(X, Y), false) != -1){
+						labels[i] = "true";
+					}
 				}
 			}
 		}
@@ -755,5 +749,3 @@ int main( int argc, char* argv[] ){
 	}
 	return EXIT_SUCCESS;
 }
-
-
