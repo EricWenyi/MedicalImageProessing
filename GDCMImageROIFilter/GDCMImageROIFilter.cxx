@@ -21,9 +21,9 @@
 int main( int argc, char * argv[] ){
 
 	//判断参数个数，若个数不够提示需要的参数
-	if( argc < 3 ){
+	if( argc < 5 ){
 		std::cerr << "Usage: " << std::endl;
-		std::cerr << argv[0] << "inputImageFile outputImageFile" << std::endl;
+		std::cerr << argv[0] << "inputImageFile outputImageFile startSlice endSlice" << std::endl;
 		return EXIT_FAILURE;
 	}
 
