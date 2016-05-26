@@ -13,6 +13,10 @@
 #define THRESHOLD 1.5
 #define PERCENTOFPOINTS_F 0.50
 #define PERCENTOFPOINTS_B 0.25
+#define LOWERBOUND 5
+#define UPPERBOUND 10
+
+
 struct APoint{
 	int contour;
 	int n;
@@ -154,7 +158,7 @@ int main( int argc, char* argv[] ){
 			if(left_or_right(tempRBS) == 0){//如果left_or_right为0代表是左肺
 				for(int i = 0; i < (int)(PERCENTOFPOINTS_F * tempRBS.size()) ; i++){
 					//计算在5~15个像素点范围内的点的欧式距离和轮廓距离
-					for(int j = 5; j < 10; j++){
+					for(int j = LOWERBOUND; j < UPPERBOUND; j++){
 						float Eu_dis = 0.0;
 						float Con_dis = 0.0;
 						//计算欧式距离
@@ -180,7 +184,7 @@ int main( int argc, char* argv[] ){
 				//因为随着i增加，像素点按照逆时针方向旋转，对于右肺就不适用了，我们从后向前遍历
 				for(int i = tempRBS.size() - 1; i > tempRBS.size() * (1 - PERCENTOFPOINTS_F); i--){
 					//计算在5~15个像素点范围内的点的欧式距离和轮廓距离
-					for(int j = 5; j < 10; j++){
+					for(int j = LOWERBOUND; j < UPPERBOUND; j++){
 						float Eu_dis = 0.0;
 						float Con_dis = 0.0;
 						//计算欧式距离
@@ -215,7 +219,7 @@ int main( int argc, char* argv[] ){
 			printf( "%d Detecting is OK, enter repair...\n", i +1 );
 		}
 
-		system("pause");
+		//system("pause");
 
 		printf("End of detecting\n");
 
