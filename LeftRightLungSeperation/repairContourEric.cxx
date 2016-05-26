@@ -11,7 +11,7 @@
 #include <algorithm>
 
 #define THRESHOLD 1.5
-#define PERCENTOFPOINTS_F 0.75
+#define PERCENTOFPOINTS_F 0.50
 #define PERCENTOFPOINTS_B 0.25
 struct APoint{
 	int contour;
@@ -152,17 +152,7 @@ int main( int argc, char* argv[] ){
 
 			//先是左肺
 			if(left_or_right(tempRBS) == 0){//如果left_or_right为0代表是左肺
-				;
-			}//接下来是右肺，注意repairedByStatus中已经有左肺的点
-			else{
-				//因为随着i增加，像素点按照逆时针方向旋转，对于右肺就不适用了，我们直接reverse整个vector
-				//std::cout<<tempRBS[0].x<<"  "<<tempRBS[0].y<<std::endl;
-				std::reverse(tempRBS.begin(),tempRBS.end());
-
-				//std::cout<<tempRBS[tempRBS.size()-1].x<<"  "<<tempRBS[tempRBS.size()-1].y<<std::endl;
-			}
-
-			for(int i = 0; i < (int)(PERCENTOFPOINTS_F * tempRBS.size()) ; i++){
+				for(int i = 0; i < (int)(PERCENTOFPOINTS_F * tempRBS.size()) ; i++){
 					//计算在5~15个像素点范围内的点的欧式距离和轮廓距离
 					for(int j = 5; j < 10; j++){
 						float Eu_dis = 0.0;
@@ -184,7 +174,35 @@ int main( int argc, char* argv[] ){
 						}
 
 					}
+				}
+			}//接下来是右肺，注意repairedByStatus中已经有左肺的点
+			else{
+				//因为随着i增加，像素点按照逆时针方向旋转，对于右肺就不适用了，我们从后向前遍历
+				for(int i = tempRBS.size() - 1; i > tempRBS.size() * (1 - PERCENTOFPOINTS_F); i--){
+					//计算在5~15个像素点范围内的点的欧式距离和轮廓距离
+					for(int j = 5; j < 10; j++){
+						float Eu_dis = 0.0;
+						float Con_dis = 0.0;
+						//计算欧式距离
+						Eu_dis = Euc_distance(tempRBS[i].x,tempRBS[i].y,tempRBS[i-j].x,tempRBS[i-j].y);
+						//计算轮廓距离
+						for(int q = 0; q < j ; q++){
+							int p = i;
+							Con_dis += Euc_distance(tempRBS[p].x,tempRBS[p].y,tempRBS[p-1].x,tempRBS[p-1].y);
+							p--;
+						}
+
+						//如果到达临界值
+						if(Con_dis / Eu_dis > THRESHOLD){
+							for(int p = i; p >= i - j; p--){
+								tempRBS[p].status = true;
+							}
+						}
+					}
+				}
 			}
+
+			
 
 			//std::cout<<tempRBS.size()<<std::endl;
 			for(int k = 0; k < tempRBS.size();k++){
