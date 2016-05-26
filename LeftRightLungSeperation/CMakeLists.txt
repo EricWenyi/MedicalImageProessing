@@ -6,7 +6,7 @@ endif()
 
 
 # This project is designed to be built outside the Insight source tree.
-project(repairContourEric)
+project(LeftRightLungSeperation)
 
 # Find ITK.
 find_package(ITK REQUIRED)
@@ -14,6 +14,6 @@ include(${ITK_USE_FILE})
 find_package( OpenCV REQUIRED )
 include_directories( ${OpenCV_INCLUDE_DIRS} )
 
-add_executable(repairContourEric repairContourEric.cxx )
+add_executable( LeftRightLungSeperation LeftRightLungSeperation.cxx )
 
-target_link_libraries(repairContourEric ${ITK_LIBRARIES} ${OpenCV_LIBS})
+target_link_libraries(LeftRightLungSeperation ${ITK_LIBRARIES} ${OpenCV_LIBS})
