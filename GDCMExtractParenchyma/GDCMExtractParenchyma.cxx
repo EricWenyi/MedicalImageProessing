@@ -79,9 +79,11 @@ int main( int argc, char* argv[] ){
 
 	int tempInCounter = 1;
 
+	//周长和面积阈值，用于之后opencv提取肺轮廓使用
 	double perimeter;
 	double area;
 
+	//种子点坐标，用于之后opencv提取肺轮廓使用
 	int startX1;
 	int startX2;
 	int startY1;
@@ -93,7 +95,8 @@ int main( int argc, char* argv[] ){
 		ExtractFilterType::InputImageRegionType::SizeType sliceSize = iterator.GetRegion().GetSize();
 		sliceSize[2] = 0;
 
-		if( tempInCounter > (int)(1/3.0f * iterator.GetRegion().GetSize()[2]) ){
+		//切片序号大到一定程度时，变更参数
+		if( tempInCounter > (int)(1/3.0f * iterator.GetRegion().GetSize()[2])){
 			startX1 = 100;
 			startX2 = 400;
 			startY1 = 250;
@@ -127,9 +130,7 @@ int main( int argc, char* argv[] ){
 			return EXIT_FAILURE;
 		}
 		
-		typedef itk::ImageRegionIterator< ImageType2D > IteratorType;
-		IteratorType origin( extractor->GetOutput(), extractor->GetOutput()->GetRequestedRegion() );
-
+		//低通滤波器设定开始
 		typedef itk::CurvatureFlowImageFilter< ImageType2D, ImageType2D > CurvatureFlowImageFilterType;
 		CurvatureFlowImageFilterType::Pointer smoothing = CurvatureFlowImageFilterType::New();
 		smoothing->SetInput( extractor->GetOutput() );
@@ -148,7 +149,9 @@ int main( int argc, char* argv[] ){
 			std::cerr << excp << std::endl;
 			return EXIT_FAILURE;
 		}
-		
+		//低通滤波器设定结束
+
+		//中值滤波器设定开始
 		typedef itk::MedianImageFilter< ImageType2D, ImageType2D >  MedianFilterType;
 		MedianFilterType::Pointer medianFilter = MedianFilterType::New();
 
@@ -164,7 +167,9 @@ int main( int argc, char* argv[] ){
 			std::cerr << err << std::endl;
 			return EXIT_FAILURE;
 		}
-		
+		//中值滤波器设定结束
+
+		//二值滤波器设定开始
 		typedef itk::BinaryThresholdImageFilter< ImageType2D, ImageType2D > BinaryFilterType;
 		BinaryFilterType::Pointer binaryFilter = BinaryFilterType::New();
 		binaryFilter->SetInput(medianFilter->GetOutput());
@@ -180,7 +185,9 @@ int main( int argc, char* argv[] ){
 			std::cerr << err << std::endl;
 			return EXIT_FAILURE;
 		}
+		//二值滤波器设定结束
 
+		//opencv提取肺轮廓开始
 		using namespace cv;
 		Mat img = itk::OpenCVImageBridge::ITKImageToCVMat< ImageType2D >( binaryFilter->GetOutput() );
 		for(int i = 0; i < img.cols; i++){
@@ -245,7 +252,11 @@ int main( int argc, char* argv[] ){
 			std::cerr << excp << std::endl;
 			return EXIT_FAILURE;
 		}
+		//opencv提取肺轮廓结束
 
+		//掩膜开始
+		typedef itk::ImageRegionIterator< ImageType2D > IteratorType;
+		IteratorType origin( extractor->GetOutput(), extractor->GetOutput()->GetRequestedRegion() );
 		IteratorType mask( itkDrawing, itkDrawing->GetRequestedRegion() );
 		
 		for ( origin.GoToBegin(), mask.GoToBegin(); !mask.IsAtEnd(); origin++, mask++ ){
@@ -253,7 +264,8 @@ int main( int argc, char* argv[] ){
 				origin.Set(0);
 			}
 		}
-		
+		//掩膜结束
+
 		printf( "%d ITK Drawing is OK\n", tempInCounter - 1 );
 
 		joinSeries->PushBackInput( extractor->GetOutput() );
