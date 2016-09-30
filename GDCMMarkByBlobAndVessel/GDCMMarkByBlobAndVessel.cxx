@@ -50,7 +50,7 @@ int main( int argc, char* argv[] ){
 	for(int i = 0; i < dimensions[0]; i++){
 		for(int j = 0; j < dimensions[1]; j++){
 			for(int k = 0; k < dimensions[2]; k++){
-				if(FBlob[dimensions[0] * dimensions[1] * (k - 1) + dimensions[0] * j + i] > 0.5 && FVessel[dimensions[0] * dimensions[1] * (k - 1) + dimensions[0] * j + i] > 0 && FVessel[dimensions[0] * dimensions[1] * (k - 1) + dimensions[0] * j + i] < 0.7){
+				if(FBlob[dimensions[0] * dimensions[1] * k + dimensions[0] * j + i] > 0.5 && FVessel[dimensions[0] * dimensions[1] * k + dimensions[0] * j + i] > 0 && FVessel[dimensions[0] * dimensions[1] * k + dimensions[0] * j + i] < 0.7){
 					location[0] = i;
 					location[1] = j;
 					location[2] = k;
