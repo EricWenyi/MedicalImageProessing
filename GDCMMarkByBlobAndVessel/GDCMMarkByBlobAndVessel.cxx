@@ -47,9 +47,9 @@ int main( int argc, char* argv[] ){
 	double *FBlob = (double *)mxGetData(pMxArrayBlob);
 	double *FVessel = (double *)mxGetData(pMxArrayVessel);
 	
-	for(int i = 0; i < dimensions[0]; i++){
+	for(int k = 0; k < dimensions[2]; k++){
 		for(int j = 0; j < dimensions[1]; j++){
-			for(int k = 0; k < dimensions[2]; k++){
+			for(int i = 0; i < dimensions[0]; i++){
 				if(FBlob[dimensions[0] * dimensions[1] * k + dimensions[0] * j + i] > 0.5 && FVessel[dimensions[0] * dimensions[1] * k + dimensions[0] * j + i] > 0 && FVessel[dimensions[0] * dimensions[1] * k + dimensions[0] * j + i] < 0.7){
 					location[0] = i;
 					location[1] = j;
