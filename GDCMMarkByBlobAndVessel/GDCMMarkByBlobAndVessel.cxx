@@ -43,14 +43,14 @@ int main( int argc, char* argv[] ){
 	
 	int *dimensions = (int *)mxGetDimensions(pMxArrayBlob);
 	int num = mxGetNumberOfElements(pMxArrayBlob);
-
+	
 	double *FBlob = (double *)mxGetData(pMxArrayBlob);
 	double *FVessel = (double *)mxGetData(pMxArrayVessel);
 	
 	for(int k = 0; k < dimensions[2]; k++){
-		for(int j = 0; j < dimensions[1]; j++){
-			for(int i = 0; i < dimensions[0]; i++){
-				if(FBlob[dimensions[0] * dimensions[1] * k + dimensions[0] * j + i] > 0.5 && FVessel[dimensions[0] * dimensions[1] * k + dimensions[0] * j + i] > 0 && FVessel[dimensions[0] * dimensions[1] * k + dimensions[0] * j + i] < 0.7){
+		for(int i = 0; i < dimensions[1]; i++){
+			for(int j = 0; j < dimensions[0]; j++){
+				if(FBlob[dimensions[0] * dimensions[1] * k + dimensions[0] * i + j] > 0.5 && FVessel[dimensions[0] * dimensions[1] * k + dimensions[0] * i + j] > 0 && FVessel[dimensions[0] * dimensions[1] * k + dimensions[0] * i + j] < 0.7){
 					location[0] = i;
 					location[1] = j;
 					location[2] = k;
