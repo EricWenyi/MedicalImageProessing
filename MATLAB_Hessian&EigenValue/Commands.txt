@@ -1,0 +1,10 @@
+I = double(dicomread('lung.dcm'));
+I = I(:,:,:);
+[Dxx, Dyy, Dzz, Dxy, Dxz, Dyz] = Hessian3D(I,0);
+[Lambda1,Lambda2,Lambda3]=eig3volume(Dxx,Dxy,Dxz,Dyy,Dyz,Dzz);
+[Lambda1,Lambda2,Lambda3] = SortLambda(Lambda1,Lambda2,Lambda3);
+clear I;
+clear Dxx Dyy Dzz Dxy Dxz Dyz
+clear Vx Vy Vz
+FBlob = CalcBlob(Lambda1, Lambda2, Lambda3);
+FVessel = CalcVessel(Lambda1, Lambda2, Lambda3);
